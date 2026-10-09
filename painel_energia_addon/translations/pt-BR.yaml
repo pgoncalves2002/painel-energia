@@ -19,6 +19,17 @@ configuration:
   demonstracao:
     name: Demonstração
     description: Cria um medidor simulado com um mês de dados (casa) ou com geração solar (solar).
+  painel_direto:
+    name: Painel direto, sem o login do Home Assistant
+    description: Abre o painel também em http://IP-DO-HOME-ASSISTANT:8081, só dentro da rede de casa.
+  painel_direto_permite_alterar:
+    name: Permitir alterações no painel direto
+    description: Desligado, o painel direto só mostra os dados; tarifa, nomes e exclusões ficam para o painel dentro do HA.
+  painel_direto_usuario:
+    name: Usuário do painel direto (opcional)
+    description: Com usuário e senha, o navegador pede login no painel direto. Em branco, abre sem senha.
+  painel_direto_senha:
+    name: Senha do painel direto (opcional)
   mqtt_host:
     name: Broker MQTT (opcional)
     description: Deixe vazio para usar o add-on Mosquitto broker, encontrado automaticamente.
@@ -30,3 +41,4 @@ configuration:
     name: Senha do broker MQTT
 network:
   8080/tcp: Porta em que o medidor envia as leituras (HTTP)
+  8081/tcp: Painel direto, sem o login do Home Assistant (só com a opção ligada)

@@ -31,10 +31,21 @@ Os sensores são criados sozinhos por MQTT. Para isso:
 
 Sem o broker o painel funciona normalmente; só não há sensores no Home Assistant. No painel Energia, use **Energia consumida** em "Consumo da rede" e **Energia injetada** em "Retorno à rede".
 
+## Painel sem entrar no Home Assistant
+
+Ligue **Painel direto** na aba Configuração e reinicie o add-on. O painel passa a abrir também em
+`http://IP-DO-HOME-ASSISTANT:8081` (por exemplo `http://192.168.0.102:8081`), sem o login do Home Assistant:
+
+- Por padrão ele é **só para visualizar**: tarifa, nomes e exclusões continuam sendo alterados pelo painel dentro do HA.
+  Ligue **Permitir alterações no painel direto** se quiser mudar isso.
+- Preencha **Usuário** e **Senha do painel direto** para o navegador pedir login. Em branco, qualquer aparelho da rede abre.
+- Funciona dentro da rede de casa. Não abra a porta 8081 para a internet.
+
 ## Portas
 
 - **8080**: só recebe as leituras do medidor. O painel não é servido nela.
-- O painel abre apenas por dentro do Home Assistant, com o login dele.
+- **8081**: painel direto, só quando a opção está ligada.
+- Sem o painel direto, o painel abre apenas por dentro do Home Assistant, com o login dele.
 
 Se a 8080 já estiver em uso, mude o número na aba Configuração (Rede) e use o mesmo número no medidor.
 

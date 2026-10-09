@@ -239,8 +239,15 @@ class Handler(BaseHTTPRequestHandler):
             raise HttpError(413, "mensagem grande demais")
         return self.rfile.read(length) if length > 0 else b""
 
+    @property
+    def view_mode(self) -> bool:
+        """Porta do painel fora do Home Assistant (add-on)."""
+        return getattr(self.server, "mode", "") == "view"
+
     def _authorized(self) -> bool:
         cfg = self.app.cfg
+        if cfg.addon and not self.view_mode:
+            return True                 # pelo ingress, quem confere o login é o Home Assistant
         if not cfg.dash_user:
             return True
         header = self.headers.get("Authorization") or ""
@@ -319,12 +326,14 @@ class Handler(BaseHTTPRequestHandler):
             if method == "POST" or (method == "GET" and self.raw_query):
                 return self._ingest(method, "")
             raise HttpError(404, "esta porta só recebe as leituras do medidor; abra o painel pelo Home Assistant")
-        if self.app.cfg.addon and self.client_address[0] not in INGRESS_PEERS:
+        if self.app.cfg.addon and not self.view_mode and self.client_address[0] not in INGRESS_PEERS:
             raise HttpError(403, "abra o painel pelo Home Assistant")
 
         if low.startswith("/api/"):
             if not self._require_auth():
                 return
+            if method != "GET" and self.view_mode and self.app.cfg.view_readonly:
+                raise HttpError(403, "este endereço do painel é só para visualizar; altere pelo Home Assistant")
             if method != "GET" and not self._same_origin():
                 raise HttpError(403, "origem não permitida")
             return self._api(method, route)
@@ -379,7 +388,12 @@ class Handler(BaseHTTPRequestHandler):
         low = route.lower()
         if method == "GET":
             if low == "/api/status":
-                return self._json(app.api_status(self.headers.get("X-Forwarded-Host") or self.headers.get("Host") or ""))
+                out = app.api_status(self.headers.get("X-Forwarded-Host") or self.headers.get("Host") or "")
+                if self.view_mode:
+                    out["readonly"] = bool(app.cfg.view_readonly)
+                    out["auth"] = bool(app.cfg.dash_user)
+                    out["direct"] = True
+                return self._json(out)
             out = app.core.api_get(route, {k: v[0] for k, v in self.query.items() if v})
             if isinstance(out, Reply):
                 return self._download(out)
@@ -464,9 +478,10 @@ class Server(ThreadingHTTPServer):
     allow_reuse_address = True
     request_queue_size = 64
 
-    def __init__(self, app: App, port: Optional[int] = None, ingest_only: bool = False):
+    def __init__(self, app: App, port: Optional[int] = None, ingest_only: bool = False, mode: str = ""):
         self.app = app
         self.ingest_only = ingest_only
+        self.mode = mode
         super().__init__((app.cfg.http_host, app.cfg.http_port if port is None else port), Handler)
 
     def handle_error(self, request, client_address) -> None:  # conexões quebradas não poluem o log

@@ -10,6 +10,7 @@ OPTIONS_FILE = os.environ.get("ADDON_OPTIONS", "/data/options.json")
 SUPERVISOR = os.environ.get("SUPERVISOR_URL", "http://supervisor")
 PANEL_PORT = 8099        # só o Home Assistant (ingress) fala com esta porta
 METER_PORT = 8080        # porta publicada para o medidor
+VIEW_PORT = 8081         # painel direto, sem o login do Home Assistant (opcional)
 
 
 def log(msg: str) -> None:
@@ -45,6 +46,19 @@ def build_env(options: dict, env: dict) -> dict:
         "DEMO": {"casa": "1", "solar": "solar"}.get(str(options.get("demonstracao", "desligada")), "0"),
         "HA_DISCOVERY": "true",
     })
+
+    # painel direto: o mesmo painel numa porta própria, para abrir sem entrar no Home Assistant
+    if options.get("painel_direto"):
+        out["VIEW_PORT"] = str(VIEW_PORT)
+        out["VIEW_READONLY"] = "false" if options.get("painel_direto_permite_alterar") else "true"
+        user, pwd = str(options.get("painel_direto_usuario") or ""), str(options.get("painel_direto_senha") or "")
+        if user and pwd:
+            out["DASH_USER"], out["DASH_PASSWORD"] = user, pwd
+        else:
+            out.pop("DASH_USER", None)
+            out.pop("DASH_PASSWORD", None)
+    else:
+        out["VIEW_PORT"] = "0"
 
     # fuso horário e endereço do Home Assistant na rede
     if not out.get("TZ"):

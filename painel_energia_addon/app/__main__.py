@@ -48,11 +48,25 @@ def main() -> int:
             return 1
         threading.Thread(target=meter_server.serve_forever, kwargs={"poll_interval": 0.5}, name="medidor", daemon=True).start()
 
+    view_server = None
+    if cfg.addon and cfg.view_port:
+        try:
+            view_server = Server(app, port=cfg.view_port, mode="view")
+        except OSError as exc:
+            log.error("Não foi possível abrir a porta %s (painel direto): %s", cfg.view_port, exc)
+        else:
+            threading.Thread(target=view_server.serve_forever, kwargs={"poll_interval": 0.5}, name="painel-direto",
+                             daemon=True).start()
+            log.info("Painel direto (sem o login do Home Assistant) na porta %s%s%s", cfg.view_port,
+                     ", com senha" if cfg.dash_user else ", sem senha",
+                     ", só visualização" if cfg.view_readonly else "")
+
     def shutdown(signum, _frame):
         log.info("Encerrando (sinal %s)...", signum)
         threading.Thread(target=server.shutdown, daemon=True).start()
-        if meter_server is not None:
-            threading.Thread(target=meter_server.shutdown, daemon=True).start()
+        for extra in (meter_server, view_server):
+            if extra is not None:
+                threading.Thread(target=extra.shutdown, daemon=True).start()
 
     signal.signal(signal.SIGTERM, shutdown)
     signal.signal(signal.SIGINT, shutdown)

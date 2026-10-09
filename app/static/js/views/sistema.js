@@ -13,6 +13,10 @@ function field(label, control, hint) {
   const tag = control.classList && control.classList.contains("seg") ? "div" : "label";
   return h(tag, { class: "field" }, h("span", { class: "field-label" }, label), control, hint ? h("span", { class: "field-hint" }, hint) : null);
 }
+function readonlyNote() {
+  return h("p", { class: "note", style: { marginTop: "14px" } },
+    "Este endereço do painel é só para visualizar. Para alterar, abra o painel pelo Home Assistant.");
+}
 function head(title, sub) {
   return h("div", { class: "card-head" }, h("div", null, h("h2", { class: "card-title" }, title), sub ? h("div", { class: "card-sub" }, sub) : null));
 }
@@ -115,7 +119,8 @@ export default function mount(root, app) {
       h("div", { class: "form-grid", style: { marginTop: "16px" } },
         field("Nome do medidor", nameIn),
         Object.entries(labelIn).map(([ph, el]) => field("Nome da fase " + ph.toUpperCase(), el, ph === "a" ? "ex.: Cozinha, Chuveiros, Ar-condicionado" : null))),
-      h("div", { class: "form-actions" }, h("button", { class: "btn primary", type: "button", onclick: save }, "Salvar nomes"), h("span", { class: "spacer", style: { flex: "1" } }), delWrap));
+      app.status.readonly ? readonlyNote()
+        : h("div", { class: "form-actions" }, h("button", { class: "btn primary", type: "button", onclick: save }, "Salvar nomes"), h("span", { class: "spacer", style: { flex: "1" } }), delWrap));
   }
 
   // ---------------------------------------------------------------- configurações
@@ -148,7 +153,8 @@ export default function mount(root, app) {
         field("Crédito por kWh injetado (R$)", credit, "0 se não quiser abater a energia injetada do custo"),
         field("Modo de instalação", mode, "onde o medidor está ligado; no automático o painel deduz pelas leituras"),
         field("Tensão nominal (fase-neutro)", vnom, "define as faixas de tensão adequada")),
-      h("div", { class: "form-actions" }, h("button", { class: "btn primary", type: "button", onclick: save }, "Salvar configurações")),
+      app.status.readonly ? readonlyNote()
+        : h("div", { class: "form-actions" }, h("button", { class: "btn primary", type: "button", onclick: save }, "Salvar configurações")),
       h("div", { style: { borderTop: "1px solid var(--border)", marginTop: "18px", paddingTop: "16px", display: "flex", flexDirection: "column", gap: "14px" } },
         field("Tema", seg([["auto", "Automático"], ["light", "Claro"], ["dark", "Escuro"]], app.themeSetting(), (v) => app.setTheme(v), "Tema")),
         field("Acessibilidade", seg([["0", "Só cores"], ["1", "Cores + padrões"]], decalOn ? "1" : "0", (v) => app.setDecal(v === "1"), "Padrões nos gráficos"),
@@ -216,7 +222,7 @@ export default function mount(root, app) {
         h("dt", null, "Fuso horário do servidor"), h("dd", null, st.tz),
         h("dt", null, "Painel ligado"), h("dd", null, "há " + fmt.duration(st.uptime)),
         h("dt", null, "Versão"), h("dd", null, st.version + (st.demo !== "off" ? " · modo demonstração (" + st.demo + ")" : "")),
-        h("dt", null, "Acesso ao painel"), h("dd", null, isHa || isAddon() ? "protegido pelo login do Home Assistant" : st.auth ? "protegido por usuário e senha" : "sem senha (defina DASH_USER e DASH_PASSWORD no .env para proteger)")),
+        h("dt", null, "Acesso ao painel"), h("dd", null, st.direct ? (st.auth ? "painel direto, com usuário e senha próprios" : "painel direto, sem senha (só dentro da rede de casa)") : isHa || isAddon() ? "protegido pelo login do Home Assistant" : st.auth ? "protegido por usuário e senha" : "sem senha (defina DASH_USER e DASH_PASSWORD no .env para proteger)")),
       h("div", { class: "form-actions" },
         h("a", Object.assign({ class: "btn" }, api.downloadLink("backup")), icon("download"), "Baixar cópia do banco"),
         h("a", { class: "btn", href: "#/dados" }, icon("table"), "Exportar CSV")),

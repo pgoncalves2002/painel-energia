@@ -1,5 +1,5 @@
 name: Painel de Energia
-version: "1.2.0"
+version: "1.3.0"
 slug: painel_energia
 description: Recebe as leituras do medidor IE Tecnologia (SM-3W Lite / SM-W Lite) e mostra um painel completo de energia
 arch:
@@ -17,8 +17,10 @@ panel_admin: false
 watchdog: "http://[HOST]:[PORT:8080]/api/health"
 ports:
   8080/tcp: 8080
+  8081/tcp: 8081
 ports_description:
   8080/tcp: Porta em que o medidor envia as leituras (HTTP)
+  8081/tcp: Painel direto, sem o login do Home Assistant (só com a opção ligada)
 services:
   - mqtt:want
 hassio_api: true
@@ -30,6 +32,8 @@ options:
   segundos_offline: 180
   potencia_maxima_kw: 80
   demonstracao: desligada
+  painel_direto: false
+  painel_direto_permite_alterar: false
 schema:
   tarifa_kwh: float(0,100)
   unidade_contadores: list(kwh|wh)
@@ -38,6 +42,10 @@ schema:
   segundos_offline: int(30,3600)
   potencia_maxima_kw: float(1,10000)
   demonstracao: list(desligada|casa|solar)
+  painel_direto: bool
+  painel_direto_permite_alterar: bool
+  painel_direto_usuario: str?
+  painel_direto_senha: password?
   mqtt_host: str?
   mqtt_port: port?
   mqtt_usuario: str?

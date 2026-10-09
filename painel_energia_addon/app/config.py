@@ -42,6 +42,8 @@ class Config:
     addon: bool = False             # rodando como add-on do Home Assistant (painel atrás do ingress)
     public_host: str = ""           # endereço que o medidor deve usar, quando conhecido (add-on)
     public_ingest_port: int = 0     # porta que o medidor deve usar, vista de fora do contêiner (add-on)
+    view_port: int = 0              # add-on: porta extra com o painel fora do Home Assistant (0 = desligada)
+    view_readonly: bool = True      # nessa porta, só visualizar (não altera configurações nem exclui dados)
 
     # MQTT (opcional): leitura do tópico do medidor e publicação para o Home Assistant
     mqtt_host: str = ""
@@ -107,6 +109,8 @@ class Config:
             addon=_bool(env, "ADDON", False),
             public_host=env.get("PUBLIC_HOST", "").strip(),
             public_ingest_port=_int(env, "PUBLIC_INGEST_PORT", 0),
+            view_port=_int(env, "VIEW_PORT", 0),
+            view_readonly=_bool(env, "VIEW_READONLY", True),
             mqtt_host=env.get("MQTT_HOST", "").strip(),
             mqtt_port=_int(env, "MQTT_PORT", d.mqtt_port),
             mqtt_username=env.get("MQTT_USERNAME", "").strip(),

@@ -43,7 +43,7 @@ O add-on é a forma mais simples no Home Assistant OS: instala pela loja de add-
 
 **Ou como add-on local:** copie a pasta `painel_energia_addon` para a pasta `addons` do Home Assistant (add-on Samba share ou Studio Code Server), depois Loja de add-ons › ⋮ › *Verificar atualizações*. Ele aparece em "Add-ons locais".
 
-No add-on o medidor envia para a **porta 8080**, caminho `/api/ingest`. Para os sensores aparecerem no Home Assistant, tenha o add-on **Mosquitto broker** e a integração MQTT; o Painel de Energia encontra o broker sozinho. Detalhes em [`painel_energia_addon/DOCS.md`](painel_energia_addon/DOCS.md).
+No add-on o medidor envia para a **porta 8080**, caminho `/api/ingest`. Para os sensores aparecerem no Home Assistant, tenha o add-on **Mosquitto broker** e a integração MQTT; o Painel de Energia encontra o broker sozinho. Para abrir o painel sem entrar no Home Assistant (por exemplo, num tablet), ligue a opção **Painel direto**: ele passa a abrir em `http://IP-DO-HOME-ASSISTANT:8081`. Detalhes em [`painel_energia_addon/DOCS.md`](painel_energia_addon/DOCS.md).
 
 ## Alternativa: integração (sem add-on e sem MQTT)
 

@@ -38,6 +38,15 @@ class AddonRunTest(unittest.TestCase):
                        {"/services/mqtt": {"host": "core-mosquitto"}})
         self.assertEqual((env["MQTT_HOST"], env["MQTT_PORT"], env["MQTT_USERNAME"]), ("192.168.0.50", "1883", "u"))
 
+    def test_painel_direto(self):
+        env = self.env({"painel_direto": True}, {})
+        self.assertEqual((env["VIEW_PORT"], env["VIEW_READONLY"]), ("8081", "true"))
+        self.assertNotIn("DASH_USER", env)
+        env = self.env({"painel_direto": True, "painel_direto_usuario": "casa", "painel_direto_senha": "abc",
+                        "painel_direto_permite_alterar": True}, {})
+        self.assertEqual((env["DASH_USER"], env["DASH_PASSWORD"], env["VIEW_READONLY"]), ("casa", "abc", "false"))
+        self.assertEqual(self.env({}, {})["VIEW_PORT"], "0")
+
     def test_config_do_addon(self):
         text = open(os.path.join(ROOT, "painel_energia_addon", "config.yaml"), encoding="utf-8").read()
         for needle in ("ingress: true", "ingress_port: 8099", "8080/tcp: 8080", "mqtt:want", "init: false"):
