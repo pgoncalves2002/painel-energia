@@ -417,6 +417,9 @@ pre.code { padding: 10px 12px; margin: 0; white-space: pre-wrap; max-height: 220
   html[data-host="ha"] .tabbar a[aria-current="page"] svg { stroke: var(--s1); }
   html[data-host="ha"] #device-select-m:not([hidden]) { display: block !important; }
 }
+/* painel direto, fora do Home Assistant: sem a aba Sistema */
+html[data-direct] [data-route="sistema"] { display: none !important; }
+@media (max-width: 900px) { html[data-direct] .tabbar { grid-template-columns: repeat(5, 1fr); } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 @media print {
   .sidebar, .tabbar, .filters, .card-tools, .topbar-right { display: none !important; }

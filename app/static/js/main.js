@@ -79,6 +79,7 @@ export const app = {
 // ------------------------------------------------------------------ navegação
 function routeName() {
   const name = (location.hash || "#/").replace(/^#\/?/, "").split(/[/?]/)[0];
+  if (name === "sistema" && app.status && app.status.direct) return "geral";   // painel direto: sem a aba Sistema
   return ROUTES[name] ? name : "geral";
 }
 
@@ -232,6 +233,9 @@ function renderChrome() {
   renderChip();
   const st = app.status;
   if (!st) return;
+  // painel direto (fora do Home Assistant): a aba Sistema fica escondida
+  document.documentElement.toggleAttribute("data-direct", !!st.direct);
+  if (st.direct && location.hash.replace(/^#\/?/, "").startsWith("sistema")) location.hash = "#/";
   const info = app.info();
   $("brand-sub").textContent = info ? (info.model || "Medidor") + (info.phases === 3 ? " · trifásico" : " · monofásico") : "Aguardando o medidor";
   $("app-version").textContent = "v" + st.version;
@@ -252,9 +256,9 @@ function renderChrome() {
   }
   const chk = app.check && app.check.device === app.device ? app.check.status : null;
   if (chk === "wh") {
-    msgs.push("Os contadores de energia deste medidor parecem estar em Wh, não em kWh: por isso o consumo aparece zerado. Veja como corrigir em Sistema › Medidor.");
+    msgs.push("Os contadores de energia deste medidor parecem estar em Wh, não em kWh: por isso o consumo aparece zerado. " + (st.direct ? "Veja a aba Sistema no painel dentro do Home Assistant." : "Veja como corrigir em Sistema › Medidor."));
   } else if (chk === "kwh") {
-    msgs.push("A opção COUNTER_UNIT=wh não combina com este medidor: o consumo aparece mil vezes menor. Veja Sistema › Medidor.");
+    msgs.push("A opção COUNTER_UNIT=wh não combina com este medidor: o consumo aparece mil vezes menor. Veja Sistema › Medidor" + (st.direct ? ", no painel dentro do Home Assistant." : "."));
   }
   banner.hidden = msgs.length === 0;
   if (msgs.length) set(banner, icon("info"), h("div", null, msgs.map((m) => h("div", null, m))));
