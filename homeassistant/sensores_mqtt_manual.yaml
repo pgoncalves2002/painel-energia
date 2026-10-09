@@ -1,0 +1,222 @@
+# Sensores MQTT manuais para o medidor IE Tecnologia SM-3W Lite.
+# Gerado por tools/gerar_yaml_ha.py. Leem direto o tópico em que o medidor publica (medidor/energia).
+#
+# Use ESTE arquivo ou a descoberta automática do painel, não os dois (os sensores ficariam duplicados).
+# Para usar: copie para a pasta de configuração do Home Assistant e inclua em configuration.yaml:
+#
+#   homeassistant:
+#     packages:
+#       medidor_energia: !include sensores_mqtt_manual.yaml
+#
+# expire_after: se o medidor ficar 3 minutos sem publicar, o sensor aparece como indisponível.
+
+mqtt:
+  sensor:
+    - name: "Potência ativa total"
+      unique_id: medidor_ie_pt
+      state_topic: "medidor/energia"
+      value_template: "{{ value_json.pt | float(0) }}"
+      unit_of_measurement: "W"
+      device_class: power
+      state_class: measurement
+      expire_after: 180
+      device: &medidor_ie
+        identifiers: ["medidor_ie_sm3w"]
+        name: "Medidor IE"
+        manufacturer: "IE Tecnologia"
+        model: "SM-3W Lite"
+
+    - name: "Potência fase A"
+      unique_id: medidor_ie_pa
+      state_topic: "medidor/energia"
+      value_template: "{{ value_json.pa | float(0) }}"
+      unit_of_measurement: "W"
+      device_class: power
+      state_class: measurement
+      expire_after: 180
+      device: *medidor_ie
+
+    - name: "Potência fase B"
+      unique_id: medidor_ie_pb
+      state_topic: "medidor/energia"
+      value_template: "{{ value_json.pb | float(0) }}"
+      unit_of_measurement: "W"
+      device_class: power
+      state_class: measurement
+      expire_after: 180
+      device: *medidor_ie
+
+    - name: "Potência fase C"
+      unique_id: medidor_ie_pc
+      state_topic: "medidor/energia"
+      value_template: "{{ value_json.pc | float(0) }}"
+      unit_of_measurement: "W"
+      device_class: power
+      state_class: measurement
+      expire_after: 180
+      device: *medidor_ie
+
+    - name: "Tensão fase A"
+      unique_id: medidor_ie_uarms
+      state_topic: "medidor/energia"
+      value_template: "{{ value_json.uarms | float(0) }}"
+      unit_of_measurement: "V"
+      device_class: voltage
+      state_class: measurement
+      expire_after: 180
+      device: *medidor_ie
+
+    - name: "Tensão fase B"
+      unique_id: medidor_ie_ubrms
+      state_topic: "medidor/energia"
+      value_template: "{{ value_json.ubrms | float(0) }}"
+      unit_of_measurement: "V"
+      device_class: voltage
+      state_class: measurement
+      expire_after: 180
+      device: *medidor_ie
+
+    - name: "Tensão fase C"
+      unique_id: medidor_ie_ucrms
+      state_topic: "medidor/energia"
+      value_template: "{{ value_json.ucrms | float(0) }}"
+      unit_of_measurement: "V"
+      device_class: voltage
+      state_class: measurement
+      expire_after: 180
+      device: *medidor_ie
+
+    - name: "Corrente fase A"
+      unique_id: medidor_ie_iarms
+      state_topic: "medidor/energia"
+      value_template: "{{ value_json.iarms | float(0) }}"
+      unit_of_measurement: "A"
+      device_class: current
+      state_class: measurement
+      expire_after: 180
+      device: *medidor_ie
+
+    - name: "Corrente fase B"
+      unique_id: medidor_ie_ibrms
+      state_topic: "medidor/energia"
+      value_template: "{{ value_json.ibrms | float(0) }}"
+      unit_of_measurement: "A"
+      device_class: current
+      state_class: measurement
+      expire_after: 180
+      device: *medidor_ie
+
+    - name: "Corrente fase C"
+      unique_id: medidor_ie_icrms
+      state_topic: "medidor/energia"
+      value_template: "{{ value_json.icrms | float(0) }}"
+      unit_of_measurement: "A"
+      device_class: current
+      state_class: measurement
+      expire_after: 180
+      device: *medidor_ie
+
+    - name: "Corrente total"
+      unique_id: medidor_ie_itrms
+      state_topic: "medidor/energia"
+      value_template: "{{ value_json.itrms | float(0) }}"
+      unit_of_measurement: "A"
+      device_class: current
+      state_class: measurement
+      expire_after: 180
+      device: *medidor_ie
+
+    - name: "Fator de potência"
+      unique_id: medidor_ie_pft
+      state_topic: "medidor/energia"
+      value_template: "{{ (value_json.pft | float(0) | abs * 100) | round(1) }}"
+      unit_of_measurement: "%"
+      device_class: power_factor
+      state_class: measurement
+      expire_after: 180
+      device: *medidor_ie
+
+    - name: "Frequência"
+      unique_id: medidor_ie_freq
+      state_topic: "medidor/energia"
+      value_template: "{{ value_json.freq | float(0) }}"
+      unit_of_measurement: "Hz"
+      device_class: frequency
+      state_class: measurement
+      expire_after: 180
+      device: *medidor_ie
+
+    - name: "Potência reativa total"
+      unique_id: medidor_ie_qt
+      state_topic: "medidor/energia"
+      value_template: "{{ value_json.qt | float(0) }}"
+      unit_of_measurement: "var"
+      device_class: reactive_power
+      state_class: measurement
+      expire_after: 180
+      device: *medidor_ie
+
+    - name: "Potência aparente total"
+      unique_id: medidor_ie_st
+      state_topic: "medidor/energia"
+      value_template: "{{ value_json.st | float(0) }}"
+      unit_of_measurement: "VA"
+      device_class: apparent_power
+      state_class: measurement
+      expire_after: 180
+      device: *medidor_ie
+
+    - name: "Energia consumida"
+      unique_id: medidor_ie_ept_c
+      state_topic: "medidor/energia"
+      value_template: "{{ value_json.ept_c | float(none) }}"
+      unit_of_measurement: "kWh"
+      device_class: energy
+      state_class: total_increasing
+      device: *medidor_ie
+
+    - name: "Energia injetada"
+      unique_id: medidor_ie_ept_g
+      state_topic: "medidor/energia"
+      value_template: "{{ value_json.ept_g | float(none) }}"
+      unit_of_measurement: "kWh"
+      device_class: energy
+      state_class: total_increasing
+      device: *medidor_ie
+
+    - name: "Energia consumida fase A"
+      unique_id: medidor_ie_epa_c
+      state_topic: "medidor/energia"
+      value_template: "{{ value_json.epa_c | float(none) }}"
+      unit_of_measurement: "kWh"
+      device_class: energy
+      state_class: total_increasing
+      device: *medidor_ie
+
+    - name: "Energia consumida fase B"
+      unique_id: medidor_ie_epb_c
+      state_topic: "medidor/energia"
+      value_template: "{{ value_json.epb_c | float(none) }}"
+      unit_of_measurement: "kWh"
+      device_class: energy
+      state_class: total_increasing
+      device: *medidor_ie
+
+    - name: "Energia consumida fase C"
+      unique_id: medidor_ie_epc_c
+      state_topic: "medidor/energia"
+      value_template: "{{ value_json.epc_c | float(none) }}"
+      unit_of_measurement: "kWh"
+      device_class: energy
+      state_class: total_increasing
+      device: *medidor_ie
+
+    - name: "Temperatura do medidor"
+      unique_id: medidor_ie_tpsd
+      state_topic: "medidor/energia"
+      value_template: "{{ value_json.tpsd | float(0) }}"
+      unit_of_measurement: "°C"
+      device_class: temperature
+      state_class: measurement
+      expire_after: 180
+      device: *medidor_ie

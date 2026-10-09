@@ -1,0 +1,44 @@
+name: Painel de Energia
+version: "1.2.0"
+slug: painel_energia
+description: Recebe as leituras do medidor IE Tecnologia (SM-3W Lite / SM-W Lite) e mostra um painel completo de energia
+arch:
+  - amd64
+  - aarch64
+  - armv7
+init: false
+startup: application
+boot: auto
+ingress: true
+ingress_port: 8099
+panel_icon: mdi:lightning-bolt
+panel_title: Painel de Energia
+panel_admin: false
+watchdog: "http://[HOST]:[PORT:8080]/api/health"
+ports:
+  8080/tcp: 8080
+ports_description:
+  8080/tcp: Porta em que o medidor envia as leituras (HTTP)
+services:
+  - mqtt:want
+hassio_api: true
+options:
+  tarifa_kwh: 0.95
+  unidade_contadores: kwh
+  topico_mqtt: medidor/energia
+  dias_leituras: 400
+  segundos_offline: 180
+  potencia_maxima_kw: 80
+  demonstracao: desligada
+schema:
+  tarifa_kwh: float(0,100)
+  unidade_contadores: list(kwh|wh)
+  topico_mqtt: str?
+  dias_leituras: int(0,36500)
+  segundos_offline: int(30,3600)
+  potencia_maxima_kw: float(1,10000)
+  demonstracao: list(desligada|casa|solar)
+  mqtt_host: str?
+  mqtt_port: port?
+  mqtt_usuario: str?
+  mqtt_senha: password?

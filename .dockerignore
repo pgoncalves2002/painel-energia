@@ -1,0 +1,16 @@
+.git
+.env
+data
+tests
+homeassistant
+docs
+.idea
+.venv
+mosquitto
+**/__pycache__
+*.pyc
+*.db
+*.db-wal
+*.db-shm
+README.md
+custom_components

@@ -1,0 +1,56 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Painel de Energia",
+        "description": "Recebe as leituras do medidor IE Tecnologia (SM-3W Lite / SM-W Lite) direto no Home Assistant.\n\nO identificador abaixo entra no caminho que você vai digitar no medidor e funciona como uma senha. Pode deixar o sugerido.",
+        "data": {
+          "webhook_id": "Identificador do caminho"
+        }
+      }
+    },
+    "error": {
+      "invalid_id": "Use de 4 a 48 letras, números, hífen ou sublinhado, sem espaços."
+    },
+    "abort": {
+      "single_instance_allowed": "A integração já está configurada. Vários medidores usam a mesma integração: basta dar um ID do Dispositivo diferente a cada um."
+    },
+    "create_entry": {
+      "default": "Pronto. Agora, na tela Configurações do medidor (seção NUVEM), marque **Habilitar Transmissão**, escolha **Tipo de envio: Padrão** e preencha:\n\n- Protocolo: `HTTP POST (Variáveis Payload Único)`\n- IP ou Domínio do Servidor: `{server}`\n- Caminho: `{path}`\n- Porta: `{port}`\n- Intervalo: `30` segundos\n\nEsses dados também ficam no painel, que aparece na barra lateral como **Painel de Energia**."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Opções do Painel de Energia",
+        "data": {
+          "sidebar": "Mostrar o painel na barra lateral",
+          "local_only": "Aceitar leituras só da rede local",
+          "listen_port": "Porta dedicada para o medidor (0 = desligada)",
+          "mqtt_topic": "Tópico MQTT do medidor (opcional)",
+          "counter_unit": "Unidade dos contadores de energia do medidor",
+          "offline_after_s": "Segundos sem leitura para considerar o medidor parado",
+          "raw_retention_days": "Dias de leituras individuais guardadas (0 = sempre)",
+          "max_power_kw": "Maior potência possível da instalação (kW)"
+        },
+        "data_description": {
+          "listen_port": "Abre uma porta HTTP simples que aceita qualquer caminho. Use se o Home Assistant só atende por HTTPS.",
+          "mqtt_topic": "Só se o medidor enviar por MQTT; usa o broker da integração MQTT do Home Assistant.",
+          "counter_unit": "Deixe kWh. Mude só se o painel avisar que os contadores parecem estar em Wh."
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "situacao_tensao": {
+        "state": {
+          "adequada": "Adequada",
+          "precaria": "Precária",
+          "critica": "Crítica",
+          "ausente": "Sem tensão"
+        }
+      }
+    }
+  }
+}

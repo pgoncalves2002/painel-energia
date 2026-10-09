@@ -1,0 +1,32 @@
+configuration:
+  tarifa_kwh:
+    name: Tarifa inicial (R$/kWh)
+    description: Com impostos. Depois pode ser alterada no painel, em Sistema.
+  unidade_contadores:
+    name: Unidade dos contadores de energia do medidor
+    description: Deixe kwh. Mude só se o painel avisar que os contadores parecem estar em Wh.
+  topico_mqtt:
+    name: Tópico MQTT do medidor
+    description: Só importa se o medidor enviar por MQTT em vez de HTTP.
+  dias_leituras:
+    name: Dias de leituras individuais guardadas
+    description: 0 guarda para sempre. Resumos de 15 minutos e energia nunca são apagados.
+  segundos_offline:
+    name: Segundos sem leitura para considerar o medidor parado
+  potencia_maxima_kw:
+    name: Maior potência possível da instalação (kW)
+    description: Teto usado para descartar saltos absurdos do contador de energia.
+  demonstracao:
+    name: Demonstração
+    description: Cria um medidor simulado com um mês de dados (casa) ou com geração solar (solar).
+  mqtt_host:
+    name: Broker MQTT (opcional)
+    description: Deixe vazio para usar o add-on Mosquitto broker, encontrado automaticamente.
+  mqtt_port:
+    name: Porta do broker MQTT
+  mqtt_usuario:
+    name: Usuário do broker MQTT
+  mqtt_senha:
+    name: Senha do broker MQTT
+network:
+  8080/tcp: Porta em que o medidor envia as leituras (HTTP)

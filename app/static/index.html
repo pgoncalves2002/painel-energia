@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Painel de Energia</title>
+<meta name="description" content="Monitoramento do medidor de energia: tempo real, consumo, fases e qualidade da energia.">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f9f9f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0d0d0d" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Energia">
+<link rel="icon" href="img/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="img/icon-180.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="css/app.css">
+<script>
+  // Aplica o tema escolhido antes da primeira pintura (evita piscar claro/escuro).
+  (function () {
+    try {
+      var t = localStorage.getItem("pe.tema");
+      if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+      else if (window.frameElement && window.frameElement.painelBridge) {
+        // dentro do Home Assistant: acompanha o tema claro/escuro dele
+        document.documentElement.setAttribute("data-theme", window.frameElement.painelBridge.state().dark ? "dark" : "light");
+      }
+      var framed = false;
+      try { framed = window.self !== window.top; } catch (e) { framed = true; }
+      if (framed) document.documentElement.setAttribute("data-host", "ha");   // integração ou add-on: o HA já tem barra lateral
+      if (localStorage.getItem("pe.padroes") === "1") document.documentElement.setAttribute("data-decal", "1");
+    } catch (e) {}
+  })();
+</script>
+</head>
+<body>
+<a class="skip" href="#view">Pular para o conteúdo</a>
+<div class="app" id="app">
+  <aside class="sidebar" aria-label="Navegação">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="var(--s1)"/><path d="M17.6 5.5 9 17.4h5.6l-1.4 9.1L22 14.4h-5.7l1.3-8.9Z" fill="#fff"/></svg>
+      <div>
+        <div class="brand-name">Painel de Energia</div>
+        <div class="brand-sub" id="brand-sub">SM-3W Lite</div>
+      </div>
+    </div>
+    <label class="field device-field" id="device-field" hidden>
+      <span class="field-label">Medidor</span>
+      <select id="device-select" class="select" aria-label="Medidor"></select>
+    </label>
+    <nav class="nav" id="nav" aria-label="Seções">
+      <a href="#/" data-route="geral"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l2.5-7 4 14 2.5-7H21"/></svg><span>Visão geral</span></a>
+      <a href="#/consumo" data-route="consumo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7"/></svg><span>Consumo</span></a>
+      <a href="#/fases" data-route="fases"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 9c2.5 0 2.5-4 5-4s2.5 4 5 4 2.5-4 5-4 2.5 4 5 4M2 19c2.5 0 2.5-4 5-4s2.5 4 5 4 2.5-4 5-4 2.5 4 5 4"/></svg><span>Fases</span></a>
+      <a href="#/qualidade" data-route="qualidade"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4.5 6v5.5c0 4.6 3.1 8 7.5 9.5 4.4-1.5 7.5-4.9 7.5-9.5V6L12 3Z"/><path d="m8.8 12 2.3 2.3 4.2-4.6"/></svg><span>Qualidade</span></a>
+      <a href="#/dados" data-route="dados"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM4 10h16M4 15h16M10 5v14"/></svg><span>Dados</span></a>
+      <a href="#/sistema" data-route="sistema"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg><span>Sistema</span></a>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="status-line" id="side-status" role="status"></div>
+      <div class="foot-row">
+        <span class="muted" id="app-version"></span>
+        <button class="icon-btn" id="theme-btn" type="button" aria-label="Alternar tema claro/escuro" title="Tema claro/escuro">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9c0-.3 0-.7-.1-1A6.5 6.5 0 0 1 12 3Z"/></svg>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-title">
+        <button class="icon-btn" id="ha-menu" type="button" aria-label="Abrir o menu do Home Assistant" title="Menu" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        </button>
+        <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="var(--s1)"/><path d="M17.6 5.5 9 17.4h5.6l-1.4 9.1L22 14.4h-5.7l1.3-8.9Z" fill="#fff"/></svg>
+        <h1 id="page-title">Visão geral</h1>
+      </div>
+      <div class="topbar-right">
+        <select id="device-select-m" class="select select-sm" aria-label="Medidor" hidden></select>
+        <div class="chip" id="live-chip" role="status" aria-live="polite"></div>
+      </div>
+    </header>
+    <div class="banner" id="banner" hidden></div>
+    <main class="view" id="view" tabindex="-1"></main>
+  </div>
+
+  <nav class="tabbar" id="tabbar" aria-label="Seções">
+    <a href="#/" data-route="geral"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l2.5-7 4 14 2.5-7H21"/></svg><span>Geral</span></a>
+    <a href="#/consumo" data-route="consumo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7"/></svg><span>Consumo</span></a>
+    <a href="#/fases" data-route="fases"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 9c2.5 0 2.5-4 5-4s2.5 4 5 4 2.5-4 5-4 2.5 4 5 4M2 19c2.5 0 2.5-4 5-4s2.5 4 5 4 2.5-4 5-4 2.5 4 5 4"/></svg><span>Fases</span></a>
+    <a href="#/qualidade" data-route="qualidade"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4.5 6v5.5c0 4.6 3.1 8 7.5 9.5 4.4-1.5 7.5-4.9 7.5-9.5V6L12 3Z"/><path d="m8.8 12 2.3 2.3 4.2-4.6"/></svg><span>Qualidade</span></a>
+    <a href="#/dados" data-route="dados"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM4 10h16M4 15h16M10 5v14"/></svg><span>Dados</span></a>
+    <a href="#/sistema" data-route="sistema"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg><span>Sistema</span></a>
+  </nav>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+<noscript><p style="padding:24px;font-family:system-ui">O Painel de Energia precisa de JavaScript ativado no navegador.</p></noscript>
+<script src="vendor/echarts.min.js"></script>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,56 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Painel de Energia (energy dashboard)",
+        "description": "Receives readings from the IE Tecnologia meter (SM-3W Lite / SM-W Lite) directly in Home Assistant.\n\nThe identifier below becomes part of the path typed into the meter and works like a password. You can keep the suggestion.",
+        "data": {
+          "webhook_id": "Path identifier"
+        }
+      }
+    },
+    "error": {
+      "invalid_id": "Use 4 to 48 letters, digits, hyphens or underscores, no spaces."
+    },
+    "abort": {
+      "single_instance_allowed": "Already configured. Several meters share one integration: give each a different device ID."
+    },
+    "create_entry": {
+      "default": "Done. In the meter's settings page (NUVEM section), enable transmission, choose **Tipo de envio: Padrão** and fill in:\n\n- Protocolo: `HTTP POST (Variáveis Payload Único)`\n- IP ou Domínio do Servidor: `{server}`\n- Caminho: `{path}`\n- Porta: `{port}`\n- Interval: `30` seconds\n\nThe same data is shown in the panel, in the sidebar as **Painel de Energia**."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Painel de Energia options",
+        "data": {
+          "sidebar": "Show the panel in the sidebar",
+          "local_only": "Accept readings from the local network only",
+          "listen_port": "Dedicated port for the meter (0 = off)",
+          "mqtt_topic": "Meter MQTT topic (optional)",
+          "counter_unit": "Unit of the meter's energy counters",
+          "offline_after_s": "Seconds without readings before the meter is considered offline",
+          "raw_retention_days": "Days of individual readings kept (0 = forever)",
+          "max_power_kw": "Highest possible power of the installation (kW)"
+        },
+        "data_description": {
+          "listen_port": "Opens a plain HTTP port that accepts any path. Use it if Home Assistant only serves HTTPS.",
+          "mqtt_topic": "Only if the meter sends over MQTT; uses the broker of Home Assistant's MQTT integration.",
+          "counter_unit": "Keep kWh. Change only if the panel warns that the counters seem to be in Wh."
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "situacao_tensao": {
+        "state": {
+          "adequada": "Adequate",
+          "precaria": "Marginal",
+          "critica": "Critical",
+          "ausente": "No voltage"
+        }
+      }
+    }
+  }
+}

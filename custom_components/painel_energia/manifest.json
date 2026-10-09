@@ -1,0 +1,13 @@
+{
+  "domain": "painel_energia",
+  "name": "Painel de Energia (IE Tecnologia SM-W / SM-3W)",
+  "after_dependencies": ["mqtt"],
+  "codeowners": [],
+  "config_flow": true,
+  "dependencies": ["http", "webhook", "frontend", "panel_custom"],
+  "integration_type": "hub",
+  "iot_class": "local_push",
+  "requirements": [],
+  "single_config_entry": true,
+  "version": "1.2.0"
+}

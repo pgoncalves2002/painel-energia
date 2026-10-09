@@ -1,0 +1,63 @@
+# Exemplos de cartões para o painel (Lovelace) do Home Assistant.
+#
+# Como usar: abra um painel > Editar > Adicionar cartão > Manual, e cole um dos blocos abaixo.
+# Os nomes das entidades seguem o padrão "sensor.<nome do dispositivo>_<nome do sensor>".
+# Com o nome padrão do dispositivo ("Medidor de energia") ficam como nos exemplos; se você renomeou
+# o medidor, confira os nomes em Configurações > Dispositivos e serviços > MQTT > seu medidor.
+
+# ---- 1) Agora: potência total e por fase
+type: entities
+title: Energia agora
+entities:
+  - entity: sensor.medidor_de_energia_potencia_ativa_total
+    name: Potência total
+  - entity: sensor.medidor_de_energia_potencia_fase_a
+    name: Fase A
+  - entity: sensor.medidor_de_energia_potencia_fase_b
+    name: Fase B
+  - entity: sensor.medidor_de_energia_potencia_fase_c
+    name: Fase C
+  - type: divider
+  - entity: sensor.medidor_de_energia_energia_consumida_hoje
+    name: Consumo hoje
+
+# ---- 2) Medidor de ponteiro da potência total (ajuste "max" ao seu disjuntor geral)
+# type: gauge
+# entity: sensor.medidor_de_energia_potencia_ativa_total
+# name: Potência
+# min: 0
+# max: 15000
+# needle: true
+# severity:
+#   green: 0
+#   yellow: 8000
+#   red: 12000
+
+# ---- 3) Tensão das três fases nas últimas 24 horas
+# type: history-graph
+# title: Tensão
+# hours_to_show: 24
+# entities:
+#   - entity: sensor.medidor_de_energia_tensao_fase_a
+#     name: Fase A
+#   - entity: sensor.medidor_de_energia_tensao_fase_b
+#     name: Fase B
+#   - entity: sensor.medidor_de_energia_tensao_fase_c
+#     name: Fase C
+
+# ---- 4) Consumo por dia (estatísticas de longo prazo do Home Assistant)
+# type: statistics-graph
+# title: Consumo por dia
+# chart_type: bar
+# period: day
+# days_to_show: 14
+# stat_types:
+#   - change
+# entities:
+#   - entity: sensor.medidor_de_energia_energia_consumida
+#     name: Consumo
+
+# ---- 5) O painel web completo dentro do Home Assistant
+# type: iframe
+# url: http://IP-DO-SERVIDOR:8080/
+# aspect_ratio: 75%

@@ -1,0 +1,65 @@
+# Painel de Energia + broker MQTT (Mosquitto).
+#
+#   docker compose up -d --build        sobe tudo
+#   docker compose logs -f painel       acompanha o painel
+#   docker compose down                 para (os dados ficam nos volumes)
+#
+# As opções ficam no arquivo .env (copie de .env.example). Nada precisa ser editado aqui.
+
+name: painel-energia
+
+services:
+  painel:
+    build: .
+    image: painel-energia:1.0.0
+    container_name: painel-energia
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ:-America/Sao_Paulo}
+      TARIFA_KWH: ${TARIFA_KWH:-0.95}
+      PUBLIC_URL: ${PUBLIC_URL:-}
+      INGEST_TOKEN: ${INGEST_TOKEN:-}
+      DASH_USER: ${DASH_USER:-}
+      DASH_PASSWORD: ${DASH_PASSWORD:-}
+      MQTT_HOST: ${MQTT_HOST:-mosquitto}
+      MQTT_PORT: ${MQTT_PORT:-1883}
+      MQTT_PUBLIC_PORT: ${MQTT_PUBLIC_PORT:-1883}
+      MQTT_USERNAME: ${MQTT_USERNAME:-}
+      MQTT_PASSWORD: ${MQTT_PASSWORD:-}
+      MQTT_TOPIC_IN: ${MQTT_TOPIC_IN:-medidor/energia}
+      MQTT_METER_ANONYMOUS: ${MQTT_METER_ANONYMOUS:-true}
+      MQTT_BASE_TOPIC: ${MQTT_BASE_TOPIC:-painel-energia}
+      HA_DISCOVERY: ${HA_DISCOVERY:-true}
+      HA_DISCOVERY_PREFIX: ${HA_DISCOVERY_PREFIX:-homeassistant}
+      RAW_RETENTION_DAYS: ${RAW_RETENTION_DAYS:-400}
+      OFFLINE_AFTER_S: ${OFFLINE_AFTER_S:-180}
+      MAX_POWER_KW: ${MAX_POWER_KW:-80}
+      COUNTER_UNIT: ${COUNTER_UNIT:-kwh}
+      DEMO: ${DEMO:-0}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "${PAINEL_PORT:-8080}:8080"       # painel web e ingestão HTTP do medidor
+    volumes:
+      - painel_data:/data                 # banco de dados (energia.db)
+    depends_on:
+      - mosquitto
+
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: painel-energia-mosquitto
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "/painel/entrypoint.sh"]
+    environment:
+      MQTT_USERNAME: ${MQTT_USERNAME:-}
+      MQTT_PASSWORD: ${MQTT_PASSWORD:-}
+      MQTT_TOPIC_IN: ${MQTT_TOPIC_IN:-medidor/energia}
+      MQTT_METER_ANONYMOUS: ${MQTT_METER_ANONYMOUS:-true}
+    ports:
+      - "${MQTT_PUBLIC_PORT:-1883}:1883"  # o medidor e o Home Assistant conectam aqui
+    volumes:
+      - ./mosquitto/entrypoint.sh:/painel/entrypoint.sh:ro
+      - mosquitto_data:/mosquitto/data
+
+volumes:
+  painel_data:
+  mosquitto_data:

@@ -1,0 +1,4 @@
+# Única dependência obrigatória para o MQTT/Home Assistant (o painel e a ingestão HTTP usam só a biblioteca padrão).
+paho-mqtt>=2.0,<3
+# Fusos horários quando o sistema não traz a base (imagens Alpine, Windows).
+tzdata
