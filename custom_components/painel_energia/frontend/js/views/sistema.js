@@ -28,7 +28,8 @@ export default function mount(root, app) {
   const conn = h("section", { class: "card c12" });
   const ha = h("section", { class: "card c6" });
   const store = h("section", { class: "card c6" });
-  root.append(h("div", { class: "grid" }, meter, settings, conn, ha, store));
+  const solarCard = h("section", { class: "card c12", hidden: !app.status.solar });
+  root.append(h("div", { class: "grid" }, meter, settings, solarCard, conn, ha, store));
 
   // ---------------------------------------------------------------- conferência dos contadores
   // Compara o avanço dos contadores de energia do medidor com o que a potência medida indica.
@@ -229,7 +230,64 @@ export default function mount(root, app) {
       h("p", { class: "note", style: { marginTop: "12px" } }, "A cópia é um arquivo SQLite completo. Para restaurar, " + (isAddon() ? "pare o add-on e coloque o arquivo como energia.db na pasta de dados dele." : isHa ? "pare o Home Assistant e coloque o arquivo como energia.db na pasta painel_energia, dentro da pasta de configuração." : "pare o painel e coloque o arquivo como energia.db na pasta de dados.")));
   }
 
+  // ---------------------------------------------------------------- geração solar (DTU Hoymiles)
+  let solarEditing = false;
+  function renderSolar() {
+    const so = app.status.solar;
+    solarCard.hidden = !so;
+    if (!so || solarEditing) return;
+    const age = so.age_s === null || so.age_s === undefined ? null : so.age_s;
+    const every = so.interval_s ? "o DTU atualiza a cada ~" + fmt.duration(so.interval_s) : "aprendendo o ritmo do DTU";
+    const situ = {
+      ok: () => status("good", "recebendo · dado " + fmt.ago(age)),
+      atrasado: () => status("good", "recebendo · dado " + fmt.ago(age) + " (" + every + ")"),
+      noite: () => status("neutral", "microinversores desligados (sem sol)"),
+      expirado: () => status("warning", "o DTU não traz dado novo dos microinversores " + fmt.ago(age)),
+      fora: () => status("critical", "sem resposta da API do DTU" + (so.error ? " · " + so.error : "")),
+      procurando: () => status("neutral", "procurando o add-on Hoymiles DTU API"),
+    }[so.state] || (() => so.state);
+    const ref = h("select", { class: "select" },
+      h("option", { value: "auto" }, "Automático (entrada da rede)"),
+      h("option", { value: "rede" }, "A entrada da rede: vê a compra e a injeção"),
+      h("option", { value: "cargas" }, "Só as cargas da casa: o solar não passa por ele"));
+    ref.value = app.settings().solar_ref || "auto";
+    ref.addEventListener("change", () => { solarEditing = true; });
+    const save = async () => {
+      try {
+        await api.post("settings", { solar_ref: ref.value });
+        solarEditing = false;
+        await app.refreshStatus();
+        renderSolar();
+        toast("Configuração salva.");
+      } catch (e) {
+        toast("Não foi possível salvar: " + e.message);
+      }
+    };
+    set(solarCard, head("Geração solar", "potência do solar lida do add-on Hoymiles DTU API, usada no fluxo de energia da visão geral"),
+      h("div", { class: "grid" },
+        h("div", { class: "c6" }, h("dl", { class: "dl" },
+          h("dt", null, "Situação"), h("dd", null, situ()),
+          h("dt", null, "Endereço da API"), h("dd", null, so.found ? h("span", { class: "code" }, String(so.url).replace(/\/api\/status$/, "")) :
+            h("span", { class: "muted" }, so.auto ? "não encontrada em " + so.urls.map((u) => u.replace(/^https?:\/\//, "").replace(/\/api\/status$/, "")).join(", ") : String(so.url || "—"))),
+          h("dt", null, "Potência informada"), h("dd", null, so.p_w === null ? "—" : fmt.power(so.p_w).text),
+          h("dt", null, "Energia hoje"), h("dd", null, so.e_today_kwh === null || so.e_today_kwh === undefined ? "—" : fmt.energy(so.e_today_kwh).text),
+          h("dt", null, "Painéis gerando"), h("dd", null, so.panel_count ? (so.panels_online ?? "—") + " de " + so.panel_count : "—"),
+          h("dt", null, "Atualização do DTU"), h("dd", null, so.interval_s ? "a cada ~" + fmt.duration(so.interval_s) : "aprendendo (precisa de duas atualizações)"))),
+        h("div", { class: "c6" },
+          field("O que o medidor mede", ref, "na entrada da rede (o normal), a casa é o que vem da rede mais o solar; só nas cargas, a rede é a casa menos o solar"),
+          app.status.readonly ? readonlyNote()
+            : h("div", { class: "form-actions" }, h("button", { class: "btn primary", type: "button", onclick: save }, "Salvar")),
+          h("p", { class: "note", style: { marginTop: "12px" } },
+            "O medidor manda a potência a cada 30 s; o DTU só recebe dados dos microinversores de tempos em tempos. O painel usa a idade real do dado do solar: " +
+            "se o solar informado for menor que a injeção medida agora, ele é corrigido para cima; dado velho demais é trocado pelo mínimo que o medidor garante; " +
+            "com os microinversores desligados, o solar é zero. Valores aproximados aparecem com ≈ e contorno tracejado."),
+          so.found || !so.auto ? null : h("p", { class: "note", style: { marginTop: "8px" } },
+            isAddon() ? "Instale e inicie o add-on Hoymiles DTU API, ou informe o endereço dele na opção “Endereço da API do DTU” deste add-on." :
+              "Defina SOLAR_URL com o endereço do add-on Hoymiles DTU API (ex.: http://192.168.0.102:8099)."))));
+  }
+
   function renderAll() {
+    renderSolar();
     renderMeter();
     renderHa();
     renderStore();

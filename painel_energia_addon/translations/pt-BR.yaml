@@ -30,6 +30,12 @@ configuration:
     description: Com usuário e senha, o navegador pede login no painel direto. Em branco, abre sem senha.
   painel_direto_senha:
     name: Senha do painel direto (opcional)
+  solar_dtu:
+    name: Geração solar do DTU Hoymiles
+    description: Lê a potência do solar do add-on Hoymiles DTU API e mostra o fluxo de energia (solar, rede e casa) na visão geral.
+  solar_dtu_url:
+    name: Endereço da API do DTU (opcional)
+    description: Em branco, o painel procura o add-on Hoymiles DTU API sozinho. Ex.: http://192.168.0.102:8099
   mqtt_host:
     name: Broker MQTT (opcional)
     description: Deixe vazio para usar o add-on Mosquitto broker, encontrado automaticamente.

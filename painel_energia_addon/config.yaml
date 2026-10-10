@@ -1,5 +1,5 @@
 name: Painel de Energia
-version: "1.3.1"
+version: "1.4.0"
 slug: painel_energia
 description: Recebe as leituras do medidor IE Tecnologia (SM-3W Lite / SM-W Lite) e mostra um painel completo de energia
 arch:
@@ -34,6 +34,7 @@ options:
   demonstracao: desligada
   painel_direto: false
   painel_direto_permite_alterar: false
+  solar_dtu: true
 schema:
   tarifa_kwh: float(0,100)
   unidade_contadores: list(kwh|wh)
@@ -46,6 +47,8 @@ schema:
   painel_direto_permite_alterar: bool
   painel_direto_usuario: str?
   painel_direto_senha: password?
+  solar_dtu: bool
+  solar_dtu_url: str?
   mqtt_host: str?
   mqtt_port: port?
   mqtt_usuario: str?

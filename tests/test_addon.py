@@ -12,7 +12,7 @@ spec.loader.exec_module(run)
 
 class AddonRunTest(unittest.TestCase):
     def env(self, options, answers):
-        with mock.patch.object(run, "supervisor", side_effect=lambda path: answers.get(path)), \
+        with mock.patch.object(run, "supervisor", side_effect=lambda path, quiet=False: answers.get(path)), \
                 mock.patch.object(run, "log"):
             return run.build_env(options, {})
 
@@ -46,6 +46,19 @@ class AddonRunTest(unittest.TestCase):
                         "painel_direto_permite_alterar": True}, {})
         self.assertEqual((env["DASH_USER"], env["DASH_PASSWORD"], env["VIEW_READONLY"]), ("casa", "abc", "false"))
         self.assertEqual(self.env({}, {})["VIEW_PORT"], "0")
+
+    def test_solar_dtu(self):
+        net = {"/network/info": {"interfaces": [{"primary": True, "ipv4": {"address": ["192.168.0.102/24"]}}]}}
+        env = self.env({}, net)
+        self.assertEqual(env["SOLAR_URL"], "http://172.30.32.1:8099,http://192.168.0.102:8099")
+        self.assertEqual(env["SOLAR_AUTO"], "1")
+        found = dict(net, **{"/addons": {"addons": [{"slug": "a1b2c3d4_hoymiles_dtu_api", "state": "started"},
+                                                   {"slug": "core_mosquitto", "state": "started"}]}})
+        self.assertTrue(self.env({}, found)["SOLAR_URL"].startswith("http://a1b2c3d4-hoymiles-dtu-api:8099,"))
+        env = self.env({"solar_dtu_url": "http://192.168.0.50:8099"}, net)
+        self.assertEqual(env["SOLAR_URL"], "http://192.168.0.50:8099")
+        self.assertNotIn("SOLAR_AUTO", env)
+        self.assertNotIn("SOLAR_URL", self.env({"solar_dtu": False}, net))
 
     def test_config_do_addon(self):
         text = open(os.path.join(ROOT, "painel_energia_addon", "config.yaml"), encoding="utf-8").read()

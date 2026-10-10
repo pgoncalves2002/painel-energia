@@ -65,6 +65,11 @@ class Config:
     counter_unit: str = "kwh"       # unidade dos contadores de energia enviados pelo medidor: kwh ou wh
     tariff_default: float = 0.95    # R$/kWh inicial (editável no painel)
 
+    # Geração solar (opcional): API do add-on Hoymiles DTU API; vários endereços separados por vírgula
+    solar_urls: List[str] = field(default_factory=list)
+    solar_auto: bool = False        # endereços adivinhados (add-on): sem resposta, o solar só não aparece
+    solar_poll_s: float = 10.0
+
     demo: bool = False              # gera um medidor simulado ("DEMO") para conhecer o painel
     demo_solar_kwp: float = 0.0     # DEMO=solar simula também geração fotovoltaica
     log_level: str = "INFO"
@@ -127,6 +132,9 @@ class Config:
             max_power_kw=max(1.0, _float(env, "MAX_POWER_KW", d.max_power_kw)),
             counter_unit="wh" if env.get("COUNTER_UNIT", "").strip().lower() == "wh" else "kwh",
             tariff_default=max(0.0, _float(env, "TARIFA_KWH", d.tariff_default)),
+            solar_urls=[u.strip() for u in env.get("SOLAR_URL", "").split(",") if u.strip()],
+            solar_auto=_bool(env, "SOLAR_AUTO", False),
+            solar_poll_s=max(2.0, _float(env, "SOLAR_POLL_S", d.solar_poll_s)),
             demo=_bool(env, "DEMO", d.demo) or env.get("DEMO", "").strip().lower() == "solar",
             demo_solar_kwp=3.6 if env.get("DEMO", "").strip().lower() == "solar" else 0.0,
             log_level=(env.get("LOG_LEVEL", d.log_level) or d.log_level).upper(),

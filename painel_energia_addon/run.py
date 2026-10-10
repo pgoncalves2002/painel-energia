@@ -11,13 +11,15 @@ SUPERVISOR = os.environ.get("SUPERVISOR_URL", "http://supervisor")
 PANEL_PORT = 8099        # só o Home Assistant (ingress) fala com esta porta
 METER_PORT = 8080        # porta publicada para o medidor
 VIEW_PORT = 8081         # painel direto, sem o login do Home Assistant (opcional)
+DTU_PORT = 8099          # porta do add-on Hoymiles DTU API
+HOST_GATEWAY = "172.30.32.1"   # o próprio Home Assistant OS visto de dentro de um add-on
 
 
 def log(msg: str) -> None:
     print("add-on: " + msg, flush=True)
 
 
-def supervisor(path: str):
+def supervisor(path: str, quiet: bool = False):
     """Consulta a API do Supervisor; devolve None se não der (o painel funciona mesmo assim)."""
     token = os.environ.get("SUPERVISOR_TOKEN")
     if not token:
@@ -28,8 +30,23 @@ def supervisor(path: str):
             body = json.loads(resp.read().decode("utf-8"))
         return body.get("data") if body.get("result") == "ok" else None
     except Exception as exc:  # sem serviço MQTT, sem permissão, Supervisor ocupado...
-        log("consulta %s sem resposta (%s)" % (path, exc))
+        if not quiet:
+            log("consulta %s sem resposta (%s)" % (path, exc))
         return None
+
+
+def dtu_candidates(public_host=None) -> list:
+    """Endereços prováveis do add-on Hoymiles DTU API, do mais direto ao mais genérico."""
+    urls = []
+    # a lista de add-ons pode exigir mais permissão do que este add-on tem; aí ficam os outros endereços
+    for addon in (supervisor("/addons", quiet=True) or {}).get("addons") or []:
+        slug = str(addon.get("slug") or "")
+        if slug.endswith("hoymiles_dtu_api") and addon.get("state", "started") == "started":
+            urls.append("http://%s:%d" % (slug.replace("_", "-"), DTU_PORT))
+    urls.append("http://%s:%d" % (HOST_GATEWAY, DTU_PORT))
+    if public_host:
+        urls.append("http://%s:%d" % (public_host, DTU_PORT))
+    return urls
 
 
 def build_env(options: dict, env: dict) -> dict:
@@ -76,6 +93,18 @@ def build_env(options: dict, env: dict) -> dict:
         if iface.get("primary") and addrs:
             out["PUBLIC_HOST"] = addrs[0].split("/")[0]
             break
+
+    # geração solar: API do add-on Hoymiles DTU API (o endereço informado ou os prováveis)
+    out.pop("SOLAR_URL", None)
+    out.pop("SOLAR_AUTO", None)
+    if options.get("solar_dtu", True):
+        url = str(options.get("solar_dtu_url") or "").strip()
+        if url:
+            out["SOLAR_URL"] = url
+            log("geração solar: API do DTU em %s" % url)
+        else:
+            out["SOLAR_URL"] = ",".join(dtu_candidates(out.get("PUBLIC_HOST")))
+            out["SOLAR_AUTO"] = "1"
 
     # broker MQTT: o informado nas opções ou o do Home Assistant (add-on Mosquitto broker)
     if options.get("mqtt_host"):

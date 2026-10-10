@@ -16,6 +16,7 @@ from datetime import date, datetime, timedelta
 from typing import Any, Deque, Dict, Iterator, List, Mapping, Optional, Tuple
 
 from . import __version__, analytics, voltage
+from . import solar as solar_flow
 from .fields import ALL_FIELDS, ENERGY_COLS, FIELD_META, GROUP_LABELS, INSTANT_FIELDS
 from .parser import ParseError, parse_message
 from .store import Store
@@ -146,6 +147,7 @@ class Core:
         self.counter_unit = "wh" if str(counter_unit).strip().lower() == "wh" else "kwh"
         self.raw_retention_days = max(0, int(raw_retention_days))
         self.protected_device = protected_device       # medidor que não pode ser excluído (demonstração)
+        self.solar = None                              # SolarSource opcional (geração do DTU Hoymiles)
         self._last_purge = 0.0
 
     @property
@@ -205,6 +207,7 @@ class Core:
             "settings": self.store.settings(),
             "db": {"size": self.store.db_size(), "retention_days": self.raw_retention_days},
             "counter_unit": self.counter_unit,
+            "solar": self.solar.state() if self.solar is not None else None,
         }
 
     def _device(self, q: Query) -> str:
@@ -234,6 +237,13 @@ class Core:
             now = int(snap["now"])
             last30 = store.energy_sum(dev, self.clock.add_days(now, -29), self.clock.add_days(now, 1))
             snap["mode"] = analytics.effective_mode(snap["settings"], last30)
+            if self.solar is not None:
+                sol = self.solar.state()
+                snap["solar"] = sol
+                if sol["found"] or not sol["auto"]:
+                    r = snap.get("reading") or {}
+                    snap["flow"] = solar_flow.compute_flow(r.get("pt"), bool(snap["device"].get("online")), sol,
+                                                           snap["settings"].get("solar_ref", "auto"), snap["mode"])
             return snap
         if low == "/api/summary":
             return analytics.summary(store, self._device(q))

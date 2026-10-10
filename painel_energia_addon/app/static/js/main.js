@@ -173,7 +173,8 @@ async function pollLive() {
   try {
     const live = await api.get("live", { device: dev });
     if (dev !== app.device) return;
-    const fresh = !app.live || app.live.ts !== live.ts;
+    // leitura nova do medidor ou mudança no fluxo solar (o DTU atualiza em outro ritmo)
+    const fresh = !app.live || app.live.ts !== live.ts || ((app.live.flow || {}).sig !== (live.flow || {}).sig);
     live.received = Date.now() / 1000;
     live.skew = live.now - live.received;      // diferença entre o relógio do servidor e o do navegador
     app.live = live;

@@ -41,6 +41,20 @@ Ligue **Painel direto** na aba Configuração e reinicie o add-on. O painel pass
 - Preencha **Usuário** e **Senha do painel direto** para o navegador pedir login. Em branco, qualquer aparelho da rede abre.
 - Funciona dentro da rede de casa. Não abra a porta 8081 para a internet.
 
+## Geração solar (DTU Hoymiles)
+
+Com o add-on **Hoymiles DTU API** instalado e iniciado no mesmo Home Assistant, a visão geral mostra o **fluxo de energia agora**: solar, rede e casa, com pontos que andam na direção da energia (mais rápidos com mais potência). O Painel de Energia acha o add-on sozinho; se não achar, informe o endereço na opção **Endereço da API do DTU** (ex.: `http://192.168.0.102:8099`). Para desligar, desmarque **Geração solar do DTU Hoymiles**.
+
+O medidor e o DTU não andam juntos: o medidor manda a cada 30 s e o DTU só recebe dados dos microinversores de tempos em tempos. Por isso:
+
+- a casa é calculada como rede + solar (medidor na entrada da rede) ou a rede como casa − solar (medidor só nas cargas; escolha em Sistema › Geração solar);
+- a idade do dado do solar é a de quando o DTU recebeu a leitura, e o painel aprende de quanto em quanto tempo o DTU atualiza;
+- se o medidor injeta mais do que o solar informado, o solar é corrigido para cima e a casa fica em zero, nunca negativa;
+- sem dado novo do DTU por mais de 20 min (ou 3 intervalos), o solar mostrado é o mínimo que a injeção garante;
+- com todos os microinversores desligados, o solar é zero, mesmo que o DTU repita o último valor.
+
+Valores aproximados aparecem com ≈ (ou ≥ quando são um mínimo) e com o contorno tracejado; o motivo aparece logo abaixo do fluxo.
+
 ## Portas
 
 - **8080**: só recebe as leituras do medidor. O painel não é servido nela.

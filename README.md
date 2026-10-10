@@ -4,6 +4,7 @@ Painel para o **Home Assistant** (add-on ou integração) que recebe as leituras
 
 ![O painel dentro do Home Assistant](docs/home-assistant.png)
 
+- **Fluxo de energia:** solar, rede e casa em tempo real, animado, com a geração do add-on Hoymiles DTU API.
 - **Tempo real:** potência total e por fase, tensão, corrente, fator de potência, frequência.
 - **Consumo e custo:** por hora, dia, mês e ano, com comparação com o período anterior, projeção do mês, demanda máxima e carga de base.
 - **Fases:** diagrama fasorial, equilíbrio entre fases e histórico de cada grandeza.

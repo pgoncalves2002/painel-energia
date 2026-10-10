@@ -21,7 +21,7 @@ APP = os.path.join(ROOT, "app")
 INTEGRATION = os.path.join(ROOT, "custom_components", "painel_energia")
 ADDON = os.path.join(ROOT, "painel_energia_addon")
 CORE_MODULES = ["__init__.py", "fields.py", "parser.py", "energy.py", "timeutil.py", "voltage.py", "store.py",
-                "analytics.py", "ha_discovery.py", "service.py"]
+                "analytics.py", "ha_discovery.py", "service.py", "solar.py"]
 
 
 def pairs():

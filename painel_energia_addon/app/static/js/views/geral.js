@@ -8,6 +8,7 @@ import { tile, delta, seg, rangeSeg, rangeSeconds, stored, store, shareBar, sect
   PHASES, PHASE_KEYS, phaseColorVar, voltageState, niceBounds, setTiles } from "../ui.js";
 import { sparkline } from "../charts.js";
 import { scope } from "../view.js";
+import { FlowDiagram, flowNotes, solarFoot } from "../flow.js";
 
 export default function mount(root, app) {
   const sc = scope();
@@ -23,6 +24,7 @@ export default function mount(root, app) {
   let mode = "consumo";
   let monthSpark = null;
   let phaseSpark = null;
+  let flowView = null;
 
   const hero = h("section", { class: "card c5 hero" });
   const hourly = new ChartCard({ title: "Consumo de hoje, hora a hora", height: 200, cls: "c7" });
@@ -62,6 +64,15 @@ export default function mount(root, app) {
     const r = live.reading;
     const L = flowLabels(mode);
     const info = app.info();
+    if (live.flow && live.flow.available) {
+      renderFlowHero(live, r, info);
+      return;
+    }
+    if (flowView) {
+      flowView.destroy();
+      flowView = null;
+      hourly.el.classList.remove("beside-flow");
+    }
     const exporting = mode !== "consumo" && r.pt < -5;
     const p = fmt.power(mode === "consumo" ? r.pt : Math.abs(r.pt));
     const label = mode === "consumo" ? "Potência agora" : (exporting ? L.gNow + " agora" : L.cNow + " agora");
@@ -84,6 +95,26 @@ export default function mount(root, app) {
       h("div", { class: "hero-meta" },
         h("span", null, "Corrente ", h("b", null, fmt.num(r.itrms, 1) + " A")),
         h("span", null, "Aparente ", h("b", null, r.st === null || r.st === undefined ? "—" : fmt.num(r.st / 1000, 2) + " kVA")),
+        h("span", null, "Fator de potência ", h("b", null, fmt.num(r.pft === null || r.pft === undefined ? null : Math.abs(r.pft), 2))),
+        h("span", null, "Frequência ", h("b", null, fmt.num(r.freq, 2) + " Hz"))));
+  }
+
+  // Com a geração do DTU: o fluxo solar → casa → rede no lugar do número grande.
+  function renderFlowHero(live, r, info) {
+    if (!flowView) {
+      flowView = new FlowDiagram();
+      hourly.el.classList.add("beside-flow");      // acompanha a altura do fluxo, ao lado dele
+    }
+    flowView.update(live.flow);
+    const offline = info && !info.online;
+    set(hero,
+      h("div", { class: "hero-label" }, h("span", null, "Fluxo de energia agora"),
+        offline ? status("serious", "medidor sem enviar · última leitura " + fmt.ago(live.device.age)) : null),
+      flowView.el,
+      flowNotes(live.flow),
+      solarFoot(live.solar),
+      h("div", { class: "hero-meta" },
+        h("span", null, "Corrente ", h("b", null, fmt.num(r.itrms, 1) + " A")),
         h("span", null, "Fator de potência ", h("b", null, fmt.num(r.pft === null || r.pft === undefined ? null : Math.abs(r.pft), 2))),
         h("span", null, "Frequência ", h("b", null, fmt.num(r.freq, 2) + " Hz"))));
   }
@@ -285,6 +316,7 @@ export default function mount(root, app) {
 
   // ---------------------------------------------------------------- ciclo de vida
   sc.onCleanup(app.onLive(renderLive));
+  sc.onCleanup(() => flowView && flowView.destroy());
   renderLive(app.live);
   loadSummary();
   loadMonthSpark();

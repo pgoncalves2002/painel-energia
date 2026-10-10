@@ -19,6 +19,7 @@ from .config import Config
 from .mqtt_bridge import MqttBridge
 from .service import MAX_BODY, ApiError, Core, Diagnostics, Reply, discard  # noqa: F401
 from .simulate import HouseSim
+from .solar import DemoSolar, SolarSource
 from .store import Store
 from .timeutil import Clock
 
@@ -50,6 +51,8 @@ class App:
         self._stop = threading.Event()
         self._threads: List[threading.Thread] = []
         self.demo_state = "off"
+        self.solar = self._make_solar()
+        self.core.solar = self.solar
 
     # ------------------------------------------------------------------ ciclo de vida
     def start(self) -> None:
@@ -57,10 +60,22 @@ class App:
         t = threading.Thread(target=self._maintenance_loop, name="manutencao", daemon=True)
         t.start()
         self._threads.append(t)
+        if self.solar is not None:
+            t = threading.Thread(target=self.solar.run, args=(self._stop,), name="solar", daemon=True)
+            t.start()
+            self._threads.append(t)
         if self.cfg.demo:
             t = threading.Thread(target=self._demo_loop, name="demo", daemon=True)
             t.start()
             self._threads.append(t)
+
+    def _make_solar(self):
+        cfg = self.cfg
+        if cfg.solar_urls:
+            return SolarSource(cfg.solar_urls, self.clock, poll_s=cfg.solar_poll_s, auto=cfg.solar_auto)
+        if cfg.demo and cfg.demo_solar_kwp > 0:
+            return DemoSolar(self.clock, HouseSim(self.clock, device_id=DEMO_ID, solar_kwp=cfg.demo_solar_kwp).solar)
+        return None
 
     def stop(self) -> None:
         self._stop.set()

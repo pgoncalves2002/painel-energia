@@ -117,6 +117,7 @@ DEFAULT_SETTINGS = {
     "credit": 0.0,         # R$/kWh injetado (crédito), se quiser abater do custo
     "mode": "auto",        # auto | consumo | bidirecional | geracao
     "v_nominal": "auto",   # auto | 127 | 220 | outro valor em volts
+    "solar_ref": "auto",   # com solar do DTU: o medidor mede a entrada da rede (rede) ou só as cargas (cargas)
 }
 
 
@@ -350,6 +351,10 @@ class Store:
             if changes["mode"] not in ("auto", "consumo", "bidirecional", "geracao"):
                 raise ValueError("modo inválido")
             clean["mode"] = changes["mode"]
+        if "solar_ref" in changes:
+            if changes["solar_ref"] not in ("auto", "rede", "cargas"):
+                raise ValueError("opção inválida para o que o medidor mede")
+            clean["solar_ref"] = changes["solar_ref"]
         if "v_nominal" in changes:
             v = changes["v_nominal"]
             if v in ("auto", None, ""):
