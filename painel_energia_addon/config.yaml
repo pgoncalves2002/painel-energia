@@ -1,5 +1,5 @@
 name: Painel de Energia
-version: "1.4.1"
+version: "1.4.2"
 slug: painel_energia
 description: Recebe as leituras do medidor IE Tecnologia (SM-3W Lite / SM-W Lite) e mostra um painel completo de energia
 arch:

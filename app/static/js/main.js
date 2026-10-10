@@ -226,8 +226,38 @@ function renderChip() {
   }
   const age = ageNow();
   const online = info.online && age !== null && age < Math.max(180, 4 * (info.interval || 30));
-  if (online) set(chip, h("span", { class: "pulse" }), h("b", null, "Ao vivo"), h("span", null, "· " + fmt.ago(age)));
-  else set(chip, h("span", { class: "pulse bad" }), h("b", null, "Sem dados"), h("span", null, age === null ? "" : "· última leitura " + fmt.ago(age)));
+  const dtu = dtuChip();
+  if (!dtu) {
+    if (online) set(chip, h("span", { class: "pulse" }), h("b", null, "Ao vivo"), h("span", null, "· " + fmt.ago(age)));
+    else set(chip, h("span", { class: "pulse bad" }), h("b", null, "Sem dados"), h("span", null, age === null ? "" : "· última leitura " + fmt.ago(age)));
+    return;
+  }
+  // com o solar do DTU: as duas ligações lado a lado, cada uma com a idade do seu último dado
+  set(chip,
+    h("span", { class: "conn", title: online ? "Medidor enviando · última leitura " + fmt.ago(age) : "Medidor sem enviar" + (age === null ? "" : " · última leitura " + fmt.ago(age)) },
+      h("span", { class: online ? "pulse" : "pulse bad" }), h("b", null, "Medidor"), h("span", { class: "conn-age" }, online ? fmt.ago(age) : "sem dados")),
+    h("span", { class: "conn-sep", "aria-hidden": "true" }),
+    h("span", { class: "conn", title: dtu.title }, h("span", { class: dtu.pulse }), h("b", null, "DTU"), h("span", { class: "conn-age" }, dtu.text)));
+}
+
+/** Ligação com o DTU (solar), para o selo do topo; null quando o painel não usa o DTU. */
+function dtuChip() {
+  const live = app.live;
+  const so = live && live.solar;
+  if (!so || (!so.found && so.auto)) return null;
+  const since = Date.now() / 1000 - (live.received || Date.now() / 1000);
+  const age = so.age_s === null || so.age_s === undefined ? null : so.age_s + since;
+  switch (so.state) {
+    case "ok":
+    case "atrasado":
+      return { pulse: "pulse", text: age === null ? "ok" : fmt.ago(age), title: "DTU respondendo · dado do solar " + fmt.ago(age) };
+    case "noite":
+      return { pulse: "pulse off", text: "sem sol", title: "DTU respondendo · microinversores desligados" };
+    case "expirado":
+      return { pulse: "pulse warn", text: "sem dado novo", title: "O DTU não traz dado novo dos microinversores " + fmt.ago(age) };
+    default:
+      return { pulse: "pulse bad", text: "sem resposta", title: "Sem resposta da API do DTU" + (so.error ? " · " + so.error : "") };
+  }
 }
 
 function renderChrome() {
@@ -244,6 +274,10 @@ function renderChrome() {
   clear(side);
   if (st.mqtt.enabled) {
     side.appendChild(statusEl(st.mqtt.connected ? "good" : "critical", st.mqtt.connected ? "MQTT conectado" : "MQTT desconectado"));
+  }
+  if (st.solar && (st.solar.found || !st.solar.auto)) {
+    const ok = ["ok", "atrasado", "noite"].includes(st.solar.state);
+    side.appendChild(statusEl(ok ? "good" : st.solar.state === "expirado" ? "warning" : "critical", ok ? "DTU conectado" : "DTU sem dados"));
   }
   if (st.demo !== "off") side.appendChild(statusEl("neutral", "Modo demonstração"));
 

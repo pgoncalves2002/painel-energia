@@ -29,7 +29,7 @@ export default function mount(root, app) {
   const ha = h("section", { class: "card c6" });
   const store = h("section", { class: "card c6" });
   const solarCard = h("section", { class: "card c12", hidden: !app.status.solar });
-  root.append(h("div", { class: "grid" }, meter, settings, solarCard, conn, ha, store));
+  root.append(h("div", { class: "grid" }, meter, settings, conn, solarCard, ha, store));
 
   // ---------------------------------------------------------------- conferência dos contadores
   // Compara o avanço dos contadores de energia do medidor com o que a potência medida indica.
@@ -269,7 +269,7 @@ export default function mount(root, app) {
         toast("Não foi possível salvar: " + e.message);
       }
     };
-    set(solarCard, head("Geração solar", "potência do solar lida do add-on Hoymiles DTU API, usada no fluxo de energia da visão geral"),
+    set(solarCard, head("Ligação do DTU (geração solar)", "potência do solar lida do add-on Hoymiles DTU API, usada no fluxo de energia da visão geral"),
       h("div", { class: "grid" },
         h("div", { class: "c6" }, h("dl", { class: "dl" },
           h("dt", null, "Situação"), h("dd", null, situ()),

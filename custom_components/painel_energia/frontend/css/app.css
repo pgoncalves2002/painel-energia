@@ -252,6 +252,9 @@ svg { display: block; }
 .pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--good); flex: none; }
 .pulse.off { background: var(--muted); }
 .pulse.bad { background: var(--critical); }
+.pulse.warn { background: var(--warning); }
+.chip .conn { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+.chip .conn-sep { width: 1px; height: 14px; background: var(--border-strong); flex: none; }
 
 .filters { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; }
 .filters .spacer { flex: 1 1 auto; }
@@ -371,7 +374,9 @@ pre.code { padding: 10px 12px; margin: 0; white-space: pre-wrap; max-height: 220
   .topbar-right .select-sm { max-width: 104px; min-width: 0; }
   .chip { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 0 1 auto; }
   /* com o seletor de medidor na barra, o selo mostra só a situação ("Ao vivo") */
-  .topbar-right .select-sm:not([hidden]) ~ .chip span:last-child:not(.pulse) { display: none; }
+  .topbar-right .select-sm:not([hidden]) ~ .chip span:last-child:not(.pulse):not(.conn) { display: none; }
+  /* no celular, medidor e DTU aparecem só com o nome e a bolinha; a idade fica no toque (title) */
+  .chip .conn-age { display: none; }
   .view { padding: 10px 16px calc(84px + env(safe-area-inset-bottom)); gap: 12px; }
   .banner { margin: 6px 16px 0; }
   .grid { gap: 12px; }

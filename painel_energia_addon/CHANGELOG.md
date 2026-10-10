@@ -1,5 +1,11 @@
 # Histórico
 
+## 1.4.2
+
+- O selo do topo mostra a ligação do medidor e a do DTU lado a lado, cada uma com a idade do último dado (no celular, só as bolinhas; a idade aparece ao tocar).
+- "DTU conectado" / "DTU sem dados" na barra lateral, junto do MQTT.
+- Em Sistema, o cartão "Ligação do DTU (geração solar)" fica logo abaixo da ligação do medidor.
+
 ## 1.4.1
 
 - O fluxo de energia cruza cada leitura do medidor com o solar do mesmo instante (o painel guarda os últimos 30 min do DTU e interpola entre as leituras dele): rede, solar e casa batem entre si.
