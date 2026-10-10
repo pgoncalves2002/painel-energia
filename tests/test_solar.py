@@ -5,7 +5,7 @@ import threading
 import unittest
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from app.solar import DemoSolar, SolarSource, compute_flow, parse_dtu_status, status_url
+from app.solar import DemoSolar, SolarSource, compute_flow, parse_dtu_status, realtime, status_url
 from app.timeutil import Clock
 
 CLOCK = Clock("America/Sao_Paulo")
@@ -140,6 +140,45 @@ class TestSource(unittest.TestCase):
             srv.server_close()
 
 
+class TestAlignment(unittest.TestCase):
+    def source(self):
+        # DTU rápido: dado novo a cada 10 s, com a potência subindo 100 W por leitura
+        t0 = local_ts("2026-10-10T12:00:00")
+        docs = [dtu_doc((1000 + 100 * i) / 1000.0, "2026-10-10 12:00:%02d" % (10 * i), age=0.0) for i in range(6)]
+        src = SolarSource(["http://dtu"], CLOCK, fetch=lambda u, t, it=iter(docs): next(it))
+        for i in range(6):
+            src.poll_once(t0 + 10 * i)
+        return src, t0
+
+    def test_interpolates_between_dtu_points(self):
+        src, t0 = self.source()
+        p, gap = src.value_at(t0 + 25)
+        self.assertAlmostEqual(p, 1250.0)
+        self.assertEqual(gap, 0.0)
+        p, gap = src.value_at(t0 + 80)                 # depois do último dado: vale o último
+        self.assertAlmostEqual(p, 1500.0)
+        self.assertAlmostEqual(gap, 30.0)
+
+    def test_flow_aligned_to_meter_reading(self):
+        src, t0 = self.source()
+        now = t0 + 52
+        st = src.at(t0 + 20, now)                     # leitura do medidor de 32 s atrás
+        self.assertEqual(st["p_w"], 1200.0)
+        self.assertEqual(st["state"], "ok")
+        f = compute_flow(-200, True, st, "rede")
+        self.assertEqual(f["home"]["w"], 1000)         # a casa sai certa, com o solar do mesmo instante
+        rt = realtime(f, src.state(now), 32)
+        self.assertEqual(rt["solar"]["w"], 1500)
+        self.assertEqual(rt["home"]["w"], 1000)
+        self.assertEqual(rt["grid"]["w"], -500)        # mais sol desde a leitura: mais injeção estimada
+        self.assertTrue(rt["grid"]["est"])
+        self.assertEqual(rt["flows"], {"grid_home": 0, "solar_grid": 500, "solar_home": 1000})
+
+    def test_realtime_keeps_lower_bounds(self):
+        f = compute_flow(-700, True, solar_state("expirado", p=3000, age=3600), "rede")
+        self.assertIs(realtime(f, solar_state("expirado", p=3000), 10), f)
+
+
 class TestFlow(unittest.TestCase):
     def test_importing_with_solar(self):
         f = compute_flow(800, True, solar_state(p=1200), "rede")
@@ -235,6 +274,12 @@ class TestLiveApi(unittest.TestCase):
             self.assertEqual(live["flow"]["home"]["w"], 1600)
             st = app.core.status()
             self.assertEqual(st["solar"]["url"], "http://dtu/api/status")
+            app.store.update_settings({"solar_sync": "tempo_real"})
+            live = app.core.api_get("/api/live", {"device": "77"})
+            self.assertEqual(live["flow"]["sync"], "tempo_real")
+            self.assertTrue(live["flow"]["grid"]["est"])
+            with self.assertRaises(ValueError):
+                app.store.update_settings({"solar_sync": "x"})
             app.store.update_settings({"solar_ref": "cargas"})
             with self.assertRaises(ValueError):
                 app.store.update_settings({"solar_ref": "x"})

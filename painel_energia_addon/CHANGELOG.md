@@ -1,5 +1,12 @@
 # Histórico
 
+## 1.4.1
+
+- O fluxo de energia cruza cada leitura do medidor com o solar do mesmo instante (o painel guarda os últimos 30 min do DTU e interpola entre as leituras dele): rede, solar e casa batem entre si.
+- Opção **Atualização do fluxo** em Sistema › Geração solar: alinhado ao medidor (padrão) ou tempo real, que acompanha o solar a cada ~5 s e estima a rede supondo a casa igual até a próxima leitura do medidor.
+- Aviso em Sistema quando o medidor envia em intervalo maior que 30 s.
+- A API do DTU passa a ser consultada a cada 5 s.
+
 ## 1.4.0
 
 - Fluxo de energia animado na visão geral (solar, rede e casa, com potências instantâneas), usando a geração do add-on Hoymiles DTU API, encontrado sozinho.

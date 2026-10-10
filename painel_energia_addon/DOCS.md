@@ -45,7 +45,12 @@ Ligue **Painel direto** na aba Configuração e reinicie o add-on. O painel pass
 
 Com o add-on **Hoymiles DTU API** instalado e iniciado no mesmo Home Assistant, a visão geral mostra o **fluxo de energia agora**: solar, rede e casa, com pontos que andam na direção da energia (mais rápidos com mais potência). O Painel de Energia acha o add-on sozinho; se não achar, informe o endereço na opção **Endereço da API do DTU** (ex.: `http://192.168.0.102:8099`). Para desligar, desmarque **Geração solar do DTU Hoymiles**.
 
-O medidor e o DTU não andam juntos: o medidor manda a cada 30 s e o DTU só recebe dados dos microinversores de tempos em tempos. Por isso:
+O medidor e o DTU não andam juntos: o medidor manda no máximo a cada 30 s, e o DTU atualiza bem mais vezes. O painel guarda os últimos 30 min do solar e, em **Sistema › Geração solar › Atualização do fluxo**, você escolhe:
+
+- **Alinhado ao medidor** (padrão): cada leitura do medidor é cruzada com o solar do mesmo instante (interpolado entre duas leituras do DTU). Rede, solar e casa batem entre si; o fluxo muda a cada leitura do medidor.
+- **Tempo real**: o solar acompanha o DTU a cada ~5 s; a casa fica a da última leitura do medidor e a rede é a diferença, marcada com ≈.
+
+Deixe o **Intervalo de transmissão** do medidor em 30 s, o mínimo aceito. Além disso:
 
 - a casa é calculada como rede + solar (medidor na entrada da rede) ou a rede como casa − solar (medidor só nas cargas; escolha em Sistema › Geração solar);
 - a idade do dado do solar é a de quando o DTU recebeu a leitura, e o painel aprende de quanto em quanto tempo o DTU atualiza;

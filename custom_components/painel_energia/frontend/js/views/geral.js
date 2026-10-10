@@ -109,6 +109,10 @@ export default function mount(root, app) {
     const offline = info && !info.online;
     set(hero,
       h("div", { class: "hero-label" }, h("span", null, "Fluxo de energia agora"),
+        h("span", { class: "muted", title: live.flow.sync === "tempo_real"
+          ? "Solar do DTU agora; a casa é a da última leitura do medidor e a rede é a diferença"
+          : "Solar do mesmo instante da leitura do medidor: rede, solar e casa batem entre si" },
+          live.flow.sync === "tempo_real" ? "· tempo real, rede estimada" : "· na leitura do medidor"),
         offline ? status("serious", "medidor sem enviar · última leitura " + fmt.ago(live.device.age)) : null),
       flowView.el,
       flowNotes(live.flow),

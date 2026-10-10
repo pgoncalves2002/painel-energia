@@ -242,8 +242,18 @@ class Core:
                 snap["solar"] = sol
                 if sol["found"] or not sol["auto"]:
                     r = snap.get("reading") or {}
-                    snap["flow"] = solar_flow.compute_flow(r.get("pt"), bool(snap["device"].get("online")), sol,
-                                                           snap["settings"].get("solar_ref", "auto"), snap["mode"])
+                    ts_m = snap.get("ts")
+                    # solar do mesmo instante da leitura do medidor: os três valores batem entre si
+                    sol_m = self.solar.at(ts_m) if ts_m else sol
+                    flow = solar_flow.compute_flow(r.get("pt"), bool(snap["device"].get("online")), sol_m,
+                                                   snap["settings"].get("solar_ref", "auto"), snap["mode"])
+                    sync = snap["settings"].get("solar_sync", "alinhado")
+                    meter_age = round(snap["now"] - ts_m, 1) if ts_m else None
+                    if sync == "tempo_real" and snap["device"].get("online"):
+                        flow = solar_flow.realtime(flow, sol, meter_age)
+                    flow["sync"] = sync
+                    flow["meter_age_s"] = meter_age
+                    snap["flow"] = flow
             return snap
         if low == "/api/summary":
             return analytics.summary(store, self._device(q))

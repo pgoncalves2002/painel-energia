@@ -68,7 +68,7 @@ class Config:
     # Geração solar (opcional): API do add-on Hoymiles DTU API; vários endereços separados por vírgula
     solar_urls: List[str] = field(default_factory=list)
     solar_auto: bool = False        # endereços adivinhados (add-on): sem resposta, o solar só não aparece
-    solar_poll_s: float = 10.0
+    solar_poll_s: float = 5.0
 
     demo: bool = False              # gera um medidor simulado ("DEMO") para conhecer o painel
     demo_solar_kwp: float = 0.0     # DEMO=solar simula também geração fotovoltaica

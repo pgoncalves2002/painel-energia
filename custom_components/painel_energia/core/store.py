@@ -118,6 +118,7 @@ DEFAULT_SETTINGS = {
     "mode": "auto",        # auto | consumo | bidirecional | geracao
     "v_nominal": "auto",   # auto | 127 | 220 | outro valor em volts
     "solar_ref": "auto",   # com solar do DTU: o medidor mede a entrada da rede (rede) ou só as cargas (cargas)
+    "solar_sync": "alinhado",  # fluxo: alinhado à leitura do medidor ou tempo_real (rede estimada entre leituras)
 }
 
 
@@ -355,6 +356,10 @@ class Store:
             if changes["solar_ref"] not in ("auto", "rede", "cargas"):
                 raise ValueError("opção inválida para o que o medidor mede")
             clean["solar_ref"] = changes["solar_ref"]
+        if "solar_sync" in changes:
+            if changes["solar_sync"] not in ("alinhado", "tempo_real"):
+                raise ValueError("opção inválida para a atualização do fluxo")
+            clean["solar_sync"] = changes["solar_sync"]
         if "v_nominal" in changes:
             v = changes["v_nominal"]
             if v in ("auto", None, ""):

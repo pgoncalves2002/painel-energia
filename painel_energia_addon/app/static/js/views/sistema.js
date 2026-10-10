@@ -251,10 +251,16 @@ export default function mount(root, app) {
       h("option", { value: "rede" }, "A entrada da rede: vê a compra e a injeção"),
       h("option", { value: "cargas" }, "Só as cargas da casa: o solar não passa por ele"));
     ref.value = app.settings().solar_ref || "auto";
-    ref.addEventListener("change", () => { solarEditing = true; });
+    const sync = h("select", { class: "select" },
+      h("option", { value: "alinhado" }, "Alinhado ao medidor: valores exatos, a cada leitura"),
+      h("option", { value: "tempo_real" }, "Tempo real: a cada ~5 s, com a rede estimada"));
+    sync.value = app.settings().solar_sync || "alinhado";
+    for (const el of [ref, sync]) el.addEventListener("change", () => { solarEditing = true; });
+    const info = app.info();
+    const slowMeter = info && info.interval && info.interval > 35;
     const save = async () => {
       try {
-        await api.post("settings", { solar_ref: ref.value });
+        await api.post("settings", { solar_ref: ref.value, solar_sync: sync.value });
         solarEditing = false;
         await app.refreshStatus();
         renderSolar();
@@ -274,12 +280,15 @@ export default function mount(root, app) {
           h("dt", null, "Painéis gerando"), h("dd", null, so.panel_count ? (so.panels_online ?? "—") + " de " + so.panel_count : "—"),
           h("dt", null, "Atualização do DTU"), h("dd", null, so.interval_s ? "a cada ~" + fmt.duration(so.interval_s) : "aprendendo (precisa de duas atualizações)"))),
         h("div", { class: "c6" },
-          field("O que o medidor mede", ref, "na entrada da rede (o normal), a casa é o que vem da rede mais o solar; só nas cargas, a rede é a casa menos o solar"),
+          h("div", { style: { display: "flex", flexDirection: "column", gap: "14px" } }, field("O que o medidor mede", ref, "na entrada da rede (o normal), a casa é o que vem da rede mais o solar; só nas cargas, a rede é a casa menos o solar"),
+          field("Atualização do fluxo", sync, "o DTU atualiza bem mais vezes que o medidor. Alinhado: usa o solar do mesmo instante da leitura do medidor. Tempo real: segue o solar e supõe a casa igual até a próxima leitura do medidor"),
+          slowMeter ? h("p", { class: "note", style: { margin: "0 0 10px" } }, "O medidor está enviando a cada " + fmt.num(info.interval, 0) +
+            " s. No medidor, em Configurações › NUVEM, baixe o Intervalo de transmissão para 30 s (o mínimo aceito) para o fluxo atualizar mais vezes.") : null),
           app.status.readonly ? readonlyNote()
             : h("div", { class: "form-actions" }, h("button", { class: "btn primary", type: "button", onclick: save }, "Salvar")),
           h("p", { class: "note", style: { marginTop: "12px" } },
-            "O medidor manda a potência a cada 30 s; o DTU só recebe dados dos microinversores de tempos em tempos. O painel usa a idade real do dado do solar: " +
-            "se o solar informado for menor que a injeção medida agora, ele é corrigido para cima; dado velho demais é trocado pelo mínimo que o medidor garante; " +
+            "O painel guarda os últimos 30 min do solar e cruza cada leitura do medidor com o solar daquele instante. " +
+            "Se a injeção medida for maior que o solar, o solar é corrigido para cima; sem dado novo do DTU por muito tempo, vale o mínimo que o medidor garante; " +
             "com os microinversores desligados, o solar é zero. Valores aproximados aparecem com ≈ e contorno tracejado."),
           so.found || !so.auto ? null : h("p", { class: "note", style: { marginTop: "8px" } },
             isAddon() ? "Instale e inicie o add-on Hoymiles DTU API, ou informe o endereço dele na opção “Endereço da API do DTU” deste add-on." :

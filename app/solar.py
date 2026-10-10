@@ -24,10 +24,11 @@ import logging
 import statistics
 import threading
 import time
+from collections import deque
 import urllib.error
 import urllib.request
 from datetime import datetime
-from typing import Any, Callable, Dict, List, Optional, Sequence
+from typing import Any, Callable, Deque, Dict, List, Optional, Sequence, Tuple
 
 from .timeutil import Clock
 
@@ -38,6 +39,8 @@ EXPIRE_MIN_S = 20 * 60     # dado mais velho que isto (ou 3 intervalos do DTU) n
 SOURCE_DOWN_S = 90         # sem conseguir consultar a API do DTU por este tempo = fonte fora do ar
 MIN_FLOW_W = 10            # abaixo disto o fluxo é desenhado como parado
 NOTE_TOLERANCE_W = 60      # diferenças menores que isto são corrigidas sem aviso
+HISTORY_S = 30 * 60        # histórico do solar guardado para alinhar com as leituras do medidor
+SYNC_MODES = ("alinhado", "tempo_real")
 
 
 def status_url(base: str) -> str:
@@ -106,7 +109,7 @@ class SolarSource:
 
     kind = "dtu"
 
-    def __init__(self, urls: Sequence[str], clock: Clock, poll_s: float = 10.0, timeout: float = 4.0,
+    def __init__(self, urls: Sequence[str], clock: Clock, poll_s: float = 5.0, timeout: float = 4.0,
                  auto: bool = False, fetch: Optional[Callable[[str, float], Dict[str, Any]]] = None):
         seen: List[str] = []
         for u in urls:
@@ -131,6 +134,7 @@ class SolarSource:
         self._changes: List[float] = []           # instantes em que chegou dado novo (para o intervalo do DTU)
         self._skew: Optional[float] = None        # relógio do DTU menos o nosso, aprendido nas trocas
         self.found = False                        # a API do DTU já respondeu alguma vez
+        self._hist: Deque[Tuple[float, float]] = deque(maxlen=2000)   # (instante do dado, potência)
 
     # ------------------------------------------------------------------ coleta
     @staticmethod
@@ -185,11 +189,61 @@ class SolarSource:
                         self._skew = dtu_t - observed
             elif self.data_at is not None and not self.data_age_known and dtu_t is not None and self._skew is not None:
                 self.data_at, self.data_age_known = min(dtu_t - self._skew, observed), True
+            self._record(self.data_at, 0.0 if sample.get("panels_online") == 0 else sample["p_w"])
             self.sample = sample
             self.ok_at = now
             self.error = sample.get("dtu_error") if sample.get("dtu_stale") else None
 
+    def _record(self, t: Optional[float], p: float) -> None:
+        """Guarda um ponto do histórico (chamado com o lock)."""
+        if t is None:
+            return
+        h = self._hist
+        if h and t <= h[-1][0]:
+            if t == h[-1][0]:
+                h[-1] = (t, p)
+            return
+        h.append((t, p))
+        while h and h[0][0] < t - HISTORY_S:
+            h.popleft()
+
+    def value_at(self, ts: float) -> Optional[Tuple[float, float]]:
+        """Potência do solar no instante ts, pelo histórico: (W, distância em s até o dado mais próximo).
+
+        Entre dois dados do DTU a potência é interpolada; depois do último, vale o último.
+        """
+        with self._lock:
+            h = list(self._hist)
+        if not h:
+            return None
+        if ts <= h[0][0]:
+            return h[0][1], h[0][0] - ts
+        prev = h[0]
+        for t, p in h[1:]:
+            if t >= ts:
+                t0, p0 = prev
+                span = t - t0
+                k = (ts - t0) / span if span > 0 else 1.0
+                return p0 + k * (p - p0), min(ts - t0, t - ts) if span > 3 * FRESH_S else 0.0
+            prev = (t, p)
+        return prev[1], ts - prev[0]
+
+    def at(self, ts: Optional[float], now: Optional[float] = None) -> Dict[str, Any]:
+        """Estado do solar no instante de uma leitura do medidor (mesmo formato de state())."""
+        out = self.state(now)
+        if ts is None or out["state"] not in ("ok", "atrasado"):
+            return out
+        v = self.value_at(ts)
+        if v is None:
+            return out
+        p, gap = v
+        out.update({"p_w": round(p, 1), "age_s": round(gap, 1), "aligned_to": ts,
+                    "state": "ok" if gap <= FRESH_S else "atrasado"})
+        return out
+
     def run(self, stop: threading.Event) -> None:
+        if self.kind == "demo":
+            self.poll_s = 5.0
         warned = False
         while not stop.is_set():
             try:
@@ -246,11 +300,11 @@ class SolarSource:
 
 
 class DemoSolar(SolarSource):
-    """Solar do modo demonstração: a mesma geração do medidor simulado, mas com o atraso típico do DTU."""
+    """Solar do modo demonstração: a mesma geração do medidor simulado, em degraus como os do DTU."""
 
     kind = "demo"
 
-    def __init__(self, clock: Clock, power: Callable[[int], float], step_s: int = 300, lag_s: int = 20):
+    def __init__(self, clock: Clock, power: Callable[[int], float], step_s: int = 10, lag_s: int = 3):
         super().__init__([], clock)
         self.power = power
         self.step_s = step_s
@@ -270,6 +324,7 @@ class DemoSolar(SolarSource):
                 self._changes = (self._changes + [t + self.lag_s])[-12:] if self._sig else self._changes
                 self._sig = sample["sig"]
             self.data_at, self.data_age_known = float(t), True
+            self._record(float(t), p)
             self.sample, self.ok_at, self.error = sample, now, None
         return True
 
@@ -371,8 +426,8 @@ def compute_flow(meter_w: Optional[float], meter_ok: bool, solar: Dict[str, Any]
             flows[k] = 0.0
     if s_est and st == "atrasado" and solar.get("age_s") is not None and not adjusted:
         notes.append({"code": "solar_atrasado", "level": "info",
-                      "text": "O DTU recebe os dados dos microinversores de tempos em tempos; o solar é de %s atrás e "
-                              "o consumo da casa é aproximado." % _ago(solar["age_s"])})
+                      "text": "O dado do solar mais próximo da leitura do medidor é de %s antes ou depois dela; o "
+                              "consumo da casa é aproximado." % _ago(solar["age_s"])})
 
     share = None
     if h and h > 0 and s is not None:
@@ -388,6 +443,35 @@ def compute_flow(meter_w: Optional[float], meter_ok: bool, solar: Dict[str, Any]
         "notes": notes,
     }
     out["sig"] = json.dumps([out["solar"]["w"], out["grid"]["w"], out["home"]["w"], st, [n["code"] for n in notes]])
+    return out
+
+
+def realtime(flow: Dict[str, Any], solar_now: Dict[str, Any], meter_age: Optional[float]) -> Dict[str, Any]:
+    """Fluxo em tempo real: solar de agora e a casa da última leitura do medidor; a rede vira a diferença.
+
+    O medidor só manda a cada 30 s ou mais, o DTU bem mais vezes. Entre duas leituras do medidor, supõe-se
+    que o consumo da casa ficou igual e que a variação veio do solar.
+    """
+    if not flow.get("available") or flow["home"]["w"] is None or flow["solar"]["min"]:
+        return flow
+    st = solar_now.get("state")
+    if st not in ("ok", "atrasado", "noite"):
+        return flow
+    s_now = 0.0 if st == "noite" else float(solar_now.get("p_w") or 0.0)
+    h = float(flow["home"]["w"])
+    g = h - s_now
+    out = dict(flow)
+    out["solar"] = dict(flow["solar"], w=_r(s_now), raw_w=_r(s_now), est=st == "atrasado", min=False, state=st,
+                        age_s=solar_now.get("age_s"))
+    out["grid"] = {"w": _r(g), "est": True}
+    out["home"] = dict(flow["home"], est=True, min=False,
+                       solar_share=round(max(0.0, min(1.0, min(s_now, h) / h)), 3) if h > 0 else None)
+    flows = {"grid_home": max(0.0, g), "solar_grid": max(0.0, -g), "solar_home": max(0.0, min(s_now, h))}
+    out["flows"] = {k: (round(v, 1) if v >= MIN_FLOW_W else 0.0) for k, v in flows.items()}
+    # avisos sobre o atraso do solar em relação ao medidor não valem aqui
+    out["notes"] = [n for n in flow["notes"] if n["code"] not in ("solar_atrasado", "solar_ajustado")]
+    out["meter_age_s"] = meter_age
+    out["sig"] = json.dumps([out["solar"]["w"], out["grid"]["w"], out["home"]["w"], st, [n["code"] for n in out["notes"]]])
     return out
 
 
